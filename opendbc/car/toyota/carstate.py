@@ -36,7 +36,7 @@ class CarState(CarStateBase):
     if CP.flags & ToyotaFlags.SECOC.value:
       self.shifter_values = can_define.dv["GEAR_PACKET_HYBRID"]["GEAR"]
     else:
-      self.shifter_values = can_define.dv["GEAR_PACKET"]["GEAR"]
+      self.shifter_values = can_define.dv["TRANSMISSION"]["GEAR"]
 
     # On cars with cp.vl["STEER_TORQUE_SENSOR"]["STEER_ANGLE"]
     # the signal is zeroed to where the steering angle is at start.
