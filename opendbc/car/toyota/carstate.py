@@ -196,7 +196,7 @@ class CarState(CarStateBase):
   @staticmethod
   def get_can_parsers(CP):
     pt_messages = [
-      ("LIGHT_STALK", 1),
+      #("LIGHT_STALK", 1),
       ("BLINKERS_STATE", 0.15),
       ("BODY_CONTROL_STATE", 3),
       ("BODY_CONTROL_STATE_2", 2),
@@ -209,6 +209,9 @@ class CarState(CarStateBase):
       ("PCM_CRUISE_SM", 1),
       ("STEER_TORQUE_SENSOR", 50),
     ]
+
+    if CP.carFingerprint != CAR.TOYOTA_VELOZ_MY_2022:
+      pt_messages.append(("LIGHT_STALK", 1))
 
     if CP.flags & ToyotaFlags.SECOC.value:
       pt_messages += [
