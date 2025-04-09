@@ -4,6 +4,17 @@ from opendbc.car.toyota.values import CAR
 Ecu = CarParams.Ecu
 
 FW_VERSIONS = {
+  CAR.TOYOTA_VELOZ_MY_2022: {
+    (Ecu.srs, 0x780, None): [
+      b'D26Afr2sGY000000',
+    ],
+    (Ecu.dsu, 0x791, None): [
+      b'3420\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00',
+    ],
+    (Ecu.engine, 0x7e0, None): [
+      b'\x0389P39010\x00\x00\x00\x00\x00\x00\x00\x00W1001000\x00\x00\x00\x00\x00\x00\x00\x00D34HC11\x00\x00\x00\x00\x00\x00\x00\x00\x00',
+    ],
+  },
   CAR.TOYOTA_AVALON: {
     (Ecu.abs, 0x7b0, None): [
       b'F152607060\x00\x00\x00\x00\x00\x00',

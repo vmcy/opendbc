@@ -3,7 +3,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum, IntFlag
 
-from opendbc.car import Bus, CarSpecs, PlatformConfig, Platforms, AngleSteeringLimits
+from opendbc.car import STD_CARGO_KG, Bus, CarSpecs, PlatformConfig, Platforms, AngleSteeringLimits
 from opendbc.car.common.conversions import Conversions as CV
 from opendbc.car.structs import CarParams
 from opendbc.car.docs_definitions import CarFootnote, CarDocs, Column, CarParts, CarHarness
@@ -116,6 +116,13 @@ class ToyotaSecOCPlatformConfig(PlatformConfig):
 
 class CAR(Platforms):
   # Toyota
+  TOYOTA_VELOZ_MY_2022 = PlatformConfig(
+    [
+      ToyotaCarDocs("Toyota Veloz Malaysia 2022")
+    ],
+    CarSpecs(mass=1170. + STD_CARGO_KG, wheelbase=2.75, steerRatio=17.00, tireStiffnessFactor=0.9871),
+    dbc_dict('perodua_psd_pt', None),
+  )
   TOYOTA_ALPHARD_TSS2 = ToyotaTSS2PlatformConfig(
     [
       ToyotaCarDocs("Toyota Alphard 2019-20"),
