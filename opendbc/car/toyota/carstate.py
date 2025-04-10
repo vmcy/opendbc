@@ -361,54 +361,21 @@ class CarState(CarStateBase):
       ("TRANSMISSION", 0),
       ("GAS_PEDAL", 0.),
       ("BRAKE", 0.),
-      ("BRAKE", 0),
       ("GAS_SENSOR", 0),
       ("RIGHT_STALK", 0),
-      ("RIGHT_STALK", 0),
       ("METER_CLUSTER", 0),
-      ("METER_CLUSTER", 0),
-      ("METER_CLUSTER", 0),
-      ("METER_CLUSTER", 1),
-      ("METER_CLUSTER", 1),
-      ("METER_CLUSTER", 1),
-      ("METER_CLUSTER", 1)
     ]
 
     pt_messages.append(("BSM", 0))
-    pt_messages.append(("METER_CLUSTER", 0))
-    pt_messages.append(("STEERING_MODULE", 0.))
     pt_messages.append(("STEERING_MODULE", 0.))
     pt_messages.append(("EPS_SHAFT_TORQUE", 0.))
     pt_messages.append(("PCM_BUTTONS", 0))
     pt_messages.append(("PCM_BUTTONS_HYBRID", 0))
-    pt_messages.append(("PCM_BUTTONS", 0))
-    pt_messages.append(("PCM_BUTTONS_HYBRID", 0))
-    pt_messages.append(("PCM_BUTTONS_HYBRID", 0))
-    pt_messages.append(("PCM_BUTTONS_HYBRID", 0))
-    pt_messages.append(("PCM_BUTTONS", 0))
-    pt_messages.append(("PCM_BUTTONS", 0))
-    pt_messages.append(("PCM_BUTTONS", 0))
     pt_messages.append(("LKAS_HUD", 0))
-    pt_messages.append(("LKAS_HUD", 0))
-    pt_messages.append(("LKAS_HUD", 0))
-    pt_messages.append(("LKAS_HUD", 0))
-    pt_messages.append(("LKAS_HUD", 0))
-    pt_messages.append(("LKAS_HUD", 0))
-    pt_messages.append(("ACC_CMD_HUD", 0))
     pt_messages.append(("ACC_CMD_HUD", 0))
     pt_messages.append(("STEERING_LKAS", 0))
-    pt_messages.append(("STEERING_LKAS", 0))
-    pt_messages.append(("LKAS_HUD", 0))
-    pt_messages.append(("LKAS_HUD", 0))
-    pt_messages.append(("LKAS_HUD", 0))
-    pt_messages.append(("ACC_CMD_HUD", 0))
-    pt_messages.append(("ACC_CMD_HUD", 0))
-    pt_messages.append(("LKAS_HUD", 0))
     pt_messages.append(("GAS_PEDAL_2", 0))
     pt_messages.append(("BUTTONS", 0))
-    pt_messages.append(("BUTTONS", 0))
-    pt_messages.append(("ACC_BRAKE", 0))
-    pt_messages.append(("ACC_BRAKE", 0))
     pt_messages.append(("ACC_BRAKE", 0))
 
     '''
