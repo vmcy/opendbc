@@ -1,4 +1,3 @@
-import copy
 import numpy as np
 
 from opendbc.can.can_define import CANDefine
@@ -20,6 +19,8 @@ PEDAL_NON_ZERO_THRES = 0.01
 
 SEC_HOLD_TO_STEP_SPEED = 0.6
 
+HUD_MULTIPLIER = 1.04
+
 ButtonType = structs.CarState.ButtonEvent.Type
 SteerControlType = structs.CarParams.SteerControlType
 
@@ -33,26 +34,6 @@ TEMP_STEER_FAULTS = (0, 9, 11, 21, 25)
 # - lka/lta msg drop out: 3 (recoverable)
 # - prolonged high driver torque: 17 (permanent)
 PERM_STEER_FAULTS = (3, 17)
-
-def clip(x, lo, hi):
-  return max(lo, min(hi, x))
-
-def interp(x, xp, fp):
-  N = len(xp)
-
-  def get_interp(xv):
-    hi = 0
-    while hi < N and xv > xp[hi]:
-      hi += 1
-    low = hi - 1
-    return fp[-1] if hi == N and xv > xp[low] else (
-      fp[0] if hi == 0 else
-      (xv - xp[low]) * (fp[hi] - fp[low]) / (xp[hi] - xp[low]) + fp[low])
-
-  return [get_interp(v) for v in x] if hasattr(x, '__iter__') else get_interp(x)
-
-def mean(x):
-  return sum(x) / len(x)
 
 class CarState(CarStateBase):
   def __init__(self, CP):
@@ -108,7 +89,6 @@ class CarState(CarStateBase):
 
   def update(self, can_parsers) -> structs.CarState:
     cp = can_parsers[Bus.pt]
-    cp_cam = can_parsers[Bus.cam]
 
     ret = structs.CarState()
 
@@ -253,9 +233,9 @@ class CarState(CarStateBase):
 
     # set speed in range of 30 - 125kmh only
     #print(self.stock_acc_cmd, self.stock_acc_set_speed, self.cruise_speed * 3.6)
-    self.cruise_speed = clip(self.cruise_speed, 30 * CV.KPH_TO_MS, 125 * CV.KPH_TO_MS)
+    self.cruise_speed = np.clip(self.cruise_speed, 30 * CV.KPH_TO_MS, 125 * CV.KPH_TO_MS)
     ret.cruiseState.speedCluster = self.cruise_speed
-    ret.cruiseState.speed = ret.cruiseState.speedCluster / interp(ret.vEgo, [0,140], [1.0615,1.0170])
+    ret.cruiseState.speed = ret.cruiseState.speedCluster / np.interp(ret.vEgo, [0,140], [1.0615,1.0170])
 
     ret.cruiseState.standstill = False
     ret.cruiseState.nonAdaptive = False
@@ -319,7 +299,7 @@ class CarState(CarStateBase):
 
   @staticmethod
   def get_can_parsers(CP):
-    pt_messages = [
+    signals = [
       ("WHEELSPEED_F", "WHEEL_SPEED", 0.),
       ("GEAR", "TRANSMISSION", 0),
       ("APPS_1", "GAS_PEDAL", 0.),
@@ -337,46 +317,51 @@ class CarState(CarStateBase):
       ("LEFT_BACK_DOOR", "METER_CLUSTER", 1)
     ]
 
-    pt_messages.append(("BSM_CHIME","BSM", 0))
-    pt_messages.append(("SEAT_BELT_WARNING2","METER_CLUSTER", 0))
-    pt_messages.append(("STEER_ANGLE", "STEERING_MODULE", 0.))
-    pt_messages.append(("MAIN_TORQUE", "STEERING_MODULE", 0.))
-    pt_messages.append(("STEERING_TORQUE", "EPS_SHAFT_TORQUE", 0.))
-    pt_messages.append(("ACC_RDY", "PCM_BUTTONS", 0))
-    pt_messages.append(("GAS_PRESSED", "PCM_BUTTONS_HYBRID", 0))
-    pt_messages.append(("SET_MINUS", "PCM_BUTTONS", 0))
-    pt_messages.append(("SET_MINUS", "PCM_BUTTONS_HYBRID", 0))
-    pt_messages.append(("RES_PLUS", "PCM_BUTTONS_HYBRID", 0))
-    pt_messages.append(("CANCEL", "PCM_BUTTONS_HYBRID", 0))
-    pt_messages.append(("RES_PLUS","PCM_BUTTONS", 0))
-    pt_messages.append(("CANCEL","PCM_BUTTONS", 0))
-    pt_messages.append(("PEDAL_DEPRESSED","PCM_BUTTONS", 0))
-    pt_messages.append(("LKAS_ENGAGED", "LKAS_HUD", 0))
-    pt_messages.append(("LDA_OFF", "LKAS_HUD", 0))
-    pt_messages.append(("FCW_DISABLE", "LKAS_HUD", 0))
-    pt_messages.append(("LDA_RELATED1", "LKAS_HUD", 0))
-    pt_messages.append(("LDA_ALERT", "LKAS_HUD", 0))
-    pt_messages.append(("LKAS_SET", "LKAS_HUD", 0))
-    pt_messages.append(("ACC_CMD", "ACC_CMD_HUD", 0))
-    pt_messages.append(("SET_ME_1_2", "ACC_CMD_HUD", 0))
-    pt_messages.append(("STEER_CMD", "STEERING_LKAS", 0))
-    pt_messages.append(("STEER_REQ", "STEERING_LKAS", 0))
-    pt_messages.append(("FRONT_DEPART", "LKAS_HUD", 0))
-    pt_messages.append(("AEB_BRAKE", "LKAS_HUD", 0))
-    pt_messages.append(("AEB_ALARM", "LKAS_HUD", 0))
-    pt_messages.append(("SET_SPEED", "ACC_CMD_HUD", 0))
-    pt_messages.append(("FOLLOW_DISTANCE", "ACC_CMD_HUD", 0))
-    pt_messages.append(("LDA_ALERT", "LKAS_HUD", 0))
-    pt_messages.append(("GAS_PEDAL_STEP", "GAS_PEDAL_2", 0))
-    pt_messages.append(("UI_SPEED", "BUTTONS", 0))
-    pt_messages.append(("LKC_BTN", "BUTTONS", 0))
-    pt_messages.append(("CRUISE_STANDSTILL", "ACC_BRAKE", 0))
-    pt_messages.append(("MAGNITUDE", "ACC_BRAKE", 0))
-    pt_messages.append(("AEB_1019", "ACC_BRAKE", 0))
+    signals.append(("BSM_CHIME","BSM", 0))
+    signals.append(("SEAT_BELT_WARNING2","METER_CLUSTER", 0))
+    signals.append(("STEER_ANGLE", "STEERING_MODULE", 0.))
+    signals.append(("MAIN_TORQUE", "STEERING_MODULE", 0.))
+    signals.append(("STEERING_TORQUE", "EPS_SHAFT_TORQUE", 0.))
+    signals.append(("ACC_RDY", "PCM_BUTTONS", 0))
+    signals.append(("GAS_PRESSED", "PCM_BUTTONS_HYBRID", 0))
+    signals.append(("SET_MINUS", "PCM_BUTTONS", 0))
+    signals.append(("SET_MINUS", "PCM_BUTTONS_HYBRID", 0))
+    signals.append(("RES_PLUS", "PCM_BUTTONS_HYBRID", 0))
+    signals.append(("CANCEL", "PCM_BUTTONS_HYBRID", 0))
+    signals.append(("RES_PLUS","PCM_BUTTONS", 0))
+    signals.append(("CANCEL","PCM_BUTTONS", 0))
+    signals.append(("PEDAL_DEPRESSED","PCM_BUTTONS", 0))
+    signals.append(("LKAS_ENGAGED", "LKAS_HUD", 0))
+    signals.append(("LDA_OFF", "LKAS_HUD", 0))
+    signals.append(("FCW_DISABLE", "LKAS_HUD", 0))
+    signals.append(("LDA_RELATED1", "LKAS_HUD", 0))
+    signals.append(("LDA_ALERT", "LKAS_HUD", 0))
+    signals.append(("LKAS_SET", "LKAS_HUD", 0))
+    signals.append(("ACC_CMD", "ACC_CMD_HUD", 0))
+    signals.append(("SET_ME_1_2", "ACC_CMD_HUD", 0))
+    signals.append(("STEER_CMD", "STEERING_LKAS", 0))
+    signals.append(("STEER_REQ", "STEERING_LKAS", 0))
+    signals.append(("FRONT_DEPART", "LKAS_HUD", 0))
+    signals.append(("AEB_BRAKE", "LKAS_HUD", 0))
+    signals.append(("AEB_ALARM", "LKAS_HUD", 0))
+    signals.append(("SET_SPEED", "ACC_CMD_HUD", 0))
+    signals.append(("FOLLOW_DISTANCE", "ACC_CMD_HUD", 0))
+    signals.append(("LDA_ALERT", "LKAS_HUD", 0))
+    signals.append(("GAS_PEDAL_STEP", "GAS_PEDAL_2", 0))
+    signals.append(("UI_SPEED", "BUTTONS", 0))
+    signals.append(("LKC_BTN", "BUTTONS", 0))
+    signals.append(("CRUISE_STANDSTILL", "ACC_BRAKE", 0))
+    signals.append(("MAGNITUDE", "ACC_BRAKE", 0))
+    signals.append(("AEB_1019", "ACC_BRAKE", 0))
 
-    cam_messages = []
-    
+    checks = []
     return {
-      Bus.pt: CANParser(DBC[CP.carFingerprint][Bus.pt], pt_messages, 0),
-      Bus.cam: CANParser(DBC[CP.carFingerprint][Bus.pt], cam_messages, 2),
+      Bus.pt: CANParser(DBC[CP.carFingerprint][Bus.pt], signals, checks, 0),
     }
+  
+    #cam_messages = []
+
+    #return {
+    #  Bus.pt: CANParser(DBC[CP.carFingerprint][Bus.pt], pt_messages, 0),
+    #  Bus.cam: CANParser(DBC[CP.carFingerprint][Bus.pt], cam_messages, 2),
+    #}

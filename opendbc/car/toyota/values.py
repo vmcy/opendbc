@@ -34,6 +34,18 @@ class CarControllerParams:
 
   MAX_LTA_DRIVER_TORQUE_ALLOWANCE = 150  # slightly above steering pressed allows some resistance when changing lanes
 
+  #STEER_BP = CP.lateralParams.torqueBP
+  #STEER_LIM_TORQ = CP.lateralParams.torqueV
+
+  STEER_DELTA_UP = 10
+  STEER_DELTA_DOWN = 30
+
+  STEER_REDUCE_FACTOR = 1000                 # how much to divide the steer when reducing fighting torque
+  GAS_MAX = 2600                             # KommuActuator dac gas value
+  GAS_STEP = 2                               # how often we update the longitudinal cmd
+  BRAKE_ALERT_PERCENT = 60                   # percentage of brake to sound stock AEB alert
+  ADAS_STEP = 5                              # 100/5 approx ASA frequency of 20 hz
+
   def __init__(self, CP):
     if CP.flags & ToyotaFlags.RAISED_ACCEL_LIMIT:
       self.ACCEL_MAX = 2.0
@@ -627,3 +639,11 @@ SECOC_CAR = CAR.with_flags(ToyotaFlags.SECOC)
 NO_STOP_TIMER_CAR = CAR.with_flags(ToyotaFlags.NO_STOP_TIMER)
 
 DBC = CAR.create_dbc_map()
+
+BRAKE_SCALE = defaultdict(lambda: 1, {CAR.TOYOTA_VELOZ_MY_2022: 2.6})
+GAS_SCALE = defaultdict(lambda: 2600, {CAR.TOYOTA_VELOZ_MY_2022: 0.4})
+
+NOT_CAN_CONTROLLED = set([])
+
+ACC_CAR = set([CAR.TOYOTA_VELOZ_MY_2022])
+SNG_CAR = set([CAR.TOYOTA_VELOZ_MY_2022])

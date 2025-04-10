@@ -1,290 +1,253 @@
 import math
 import numpy as np
-from opendbc.car import Bus, apply_meas_steer_torque_limits, apply_std_steer_angle_limits, common_fault_avoidance, \
-                        make_tester_present_msg, rate_limit, structs, ACCELERATION_DUE_TO_GRAVITY, DT_CTRL
-from opendbc.car.can_definitions import CanData
-from opendbc.car.carlog import carlog
-from opendbc.car.common.filter_simple import FirstOrderFilter
-from opendbc.car.common.pid import PIDController
-from opendbc.car.secoc import add_mac, build_sync_mac
-from opendbc.car.interfaces import CarControllerBase
-from opendbc.car.toyota import toyotacan
-from opendbc.car.toyota.values import CAR, STATIC_DSU_MSGS, NO_STOP_TIMER_CAR, TSS2_CAR, \
-                                        CarControllerParams, ToyotaFlags, \
-                                        UNSUPPORTED_DSU_CAR
+from opendbc.car import make_can_msg, DT_CTRL
+from opendbc.car.toyota.peroduacan import create_steer_command, perodua_create_gas_command, \
+                                             perodua_aeb_warning, create_can_steer_command, \
+                                             perodua_create_accel_command, \
+                                             perodua_create_brake_command, perodua_create_hud, \
+                                             perodua_buttons
+from opendbc.car.toyota.values import CarControllerParams, ACC_CAR, CAR, DBC, NOT_CAN_CONTROLLED, BRAKE_SCALE, GAS_SCALE, SNG_CAR
+#from opendbc.controls.lib.desire_helper import LANE_CHANGE_SPEED_MIN
 from opendbc.can.packer import CANPacker
 
-Ecu = structs.CarParams.Ecu
-LongCtrlState = structs.CarControl.Actuators.LongControlState
-SteerControlType = structs.CarParams.SteerControlType
-VisualAlert = structs.CarControl.HUDControl.VisualAlert
+from bisect import bisect_left
 
-# The up limit allows the brakes/gas to unwind quickly leaving a stop,
-# the down limit roughly matches the rate of ACCEL_NET, reducing PCM compensation windup
-ACCEL_WINDUP_LIMIT = 4.0 * DT_CTRL * 3  # m/s^2 / frame
-ACCEL_WINDDOWN_LIMIT = -4.0 * DT_CTRL * 3  # m/s^2 / frame
-ACCEL_PID_UNWIND = 0.03 * DT_CTRL * 3  # m/s^2 / frame
+#from opendbc.car.common.features import Features
 
-# LKA limits
-# EPS faults if you apply torque while the steering rate is above 100 deg/s for too long
-MAX_STEER_RATE = 100  # deg/s
-MAX_STEER_RATE_FRAMES = 18  # tx control frames needed before torque can be cut
+from opendbc.car.interfaces import CarControllerBase
 
-# EPS allows user torque above threshold for 50 frames before permanently faulting
-MAX_USER_TORQUE = 500
+BRAKE_THRESHOLD = 0.01
+BRAKE_MAG = [BRAKE_THRESHOLD,.32,.46,.61,.76,.90,1.06,1.21,1.35,1.51,4.0]
+PUMP_VALS = [0, .1, .2, .3, .4, .5, .6, .7, .8, .9, 1.0]
+PUMP_RESET_INTERVAL = 1.5
+PUMP_RESET_DURATION = 0.1
 
+class BrakingStatus():
+  STANDSTILL_INIT = 0
+  BRAKE_HOLD = 1
+  PUMP_RESET = 2
 
-def get_long_tune(CP, params):
-  if CP.carFingerprint in TSS2_CAR:
-    kiBP = [2., 5.]
-    kiV = [0.5, 0.25]
+def apply_perodua_steer_torque_limits(apply_torque, apply_torque_last, driver_torque, blinkerOn, LIMITS):
+
+  # limits due to driver torque and lane change
+  reduced_torque_mult = 10 if blinkerOn else 1.5
+  driver_max_torque = 255 + driver_torque * reduced_torque_mult
+  driver_min_torque = -255 - driver_torque * reduced_torque_mult
+  max_steer_allowed = np.clip(driver_max_torque, 0, 255)
+  min_steer_allowed = np.clip(driver_min_torque, -255, 0)
+  apply_torque = np.clip(apply_torque, min_steer_allowed, max_steer_allowed)
+
+  # slow rate if steer torque increases in magnitude
+  if apply_torque_last > 0:
+    apply_torque = np.clip(apply_torque, max(apply_torque_last - LIMITS.STEER_DELTA_DOWN, -LIMITS.STEER_DELTA_UP),
+                        apply_torque_last + LIMITS.STEER_DELTA_UP)
   else:
-    kiBP = [0., 5., 35.]
-    kiV = [3.6, 2.4, 1.5]
+    apply_torque = np.clip(apply_torque, apply_torque_last - LIMITS.STEER_DELTA_UP,
+                        min(apply_torque_last + LIMITS.STEER_DELTA_DOWN, LIMITS.STEER_DELTA_UP))
 
-  return PIDController(0.0, (kiBP, kiV), k_f=1.0,
-                       pos_limit=params.ACCEL_MAX, neg_limit=params.ACCEL_MIN,
-                       rate=1 / (DT_CTRL * 3))
+  return int(round(float(apply_torque)))
 
+def apply_acttr_steer_torque_limits(apply_torque, apply_torque_last, LIMITS):
+  # slow rate if steer torque increases in magnitude
+  if apply_torque_last > 0:
+    apply_torque = np.clip(apply_torque, max(apply_torque_last - LIMITS.STEER_DELTA_DOWN, -LIMITS.STEER_DELTA_UP),
+                        apply_torque_last + LIMITS.STEER_DELTA_UP)
+  else:
+    apply_torque = np.clip(apply_torque, apply_torque_last - LIMITS.STEER_DELTA_UP,
+                        min(apply_torque_last + LIMITS.STEER_DELTA_DOWN, LIMITS.STEER_DELTA_UP))
+
+  return int(round(float(apply_torque)))
+
+def compute_gb(accel):
+  gb = float(accel) / 4.0
+  return np.clip(gb, 0.0, 1.0), np.clip(-gb, 0.0, 1.0)
+
+# reset pump every PUMP_RESET_INTERVAL seconds for. Reset to zero for PUMP_RESET_DURATION
+def standstill_brake(min_accel, ts_last, ts_now, prev_status):
+  brake = min_accel
+  status = prev_status
+
+  dt = ts_now - ts_last
+  if prev_status == BrakingStatus.PUMP_RESET and dt > PUMP_RESET_DURATION:
+    status = BrakingStatus.BRAKE_HOLD
+    ts_last = ts_now
+
+  if prev_status == BrakingStatus.BRAKE_HOLD and dt > PUMP_RESET_INTERVAL:
+    status = BrakingStatus.PUMP_RESET
+    ts_last = ts_now
+
+  if prev_status == BrakingStatus.STANDSTILL_INIT and dt > PUMP_RESET_INTERVAL:
+    status = BrakingStatus.PUMP_RESET
+    ts_last = ts_now
+
+  if status == BrakingStatus.PUMP_RESET:
+    brake = 0
+
+  return brake, status, ts_last
+
+def psd_brake(apply_brake, last_pump):
+  # reversed engineered from Ativa stock braking
+  # this is necessary for noiseless pump braking
+  pump = PUMP_VALS[bisect_left(BRAKE_MAG, apply_brake)]
+
+  # make sure the pump value decrease and increases within 0.1
+  # to prevent brake bleeding.
+  # TODO does it really prevent brake bleed?
+  if abs(pump - last_pump) > 0.1:
+    pump = last_pump + np.clip(pump - last_pump, -0.1, 0.1)
+  last_pump = pump
+
+  if apply_brake >= BRAKE_THRESHOLD:
+    brake_req = 1
+  else:
+    brake_req = 0
+
+  return pump, brake_req, last_pump
 
 class CarController(CarControllerBase):
   def __init__(self, dbc_names, CP):
     super().__init__(dbc_names, CP)
     self.params = CarControllerParams(self.CP)
-    self.last_torque = 0
-    self.last_angle = 0
-    self.alert_active = False
-    self.last_standstill = False
-    self.standstill_req = False
-    self.permit_braking = True
-    self.steer_rate_counter = 0
-    self.distance_button = 0
+    
+    self.last_steer = 0
+    self.steer_rate_limited = False
+    self.steering_direction = False
+    self.brake_pressed = False
+    self.packer = CANPacker(DBC[CP.carFingerprint]['pt'])
+    self.brake = 0
+    self.brake_scale = BRAKE_SCALE[CP.carFingerprint]
+    self.gas_scale = GAS_SCALE[CP.carFingerprint]
 
-    # *** start long control state ***
-    self.long_pid = get_long_tune(self.CP, self.params)
-    self.aego = FirstOrderFilter(0.0, 0.25, DT_CTRL * 3)
-    self.pitch = FirstOrderFilter(0, 0.5, DT_CTRL)
+    #f = Features()
+    #self.need_clear_engine = f.has("ClearCode")
+    self.need_clear_engine = False
 
-    self.accel = 0
-    self.prev_accel = 0
-    # *** end long control state ***
+    self.last_pump = 0
 
-    self.packer = CANPacker(dbc_names[Bus.pt])
+    # standstill globals
+    self.prev_ts = 0.
+    self.standstill_status = BrakingStatus.STANDSTILL_INIT
+    self.min_standstill_accel = 0
 
-    self.secoc_lka_message_counter = 0
-    self.secoc_lta_message_counter = 0
-    self.secoc_prev_reset_counter = 0
+    self.stockLdw = False
+    self.using_stock_acc = False
+    #self.force_use_stock_acc = f.has("StockAcc")
+    self.force_use_stock_acc = True
 
-  def update(self, CC, CS, now_nanos):
-    actuators = CC.actuators
-    stopping = actuators.longControlState == LongCtrlState.stopping
-    hud_control = CC.hudControl
-    pcm_cancel_cmd = CC.cruiseControl.cancel
-    lat_active = CC.latActive and abs(CS.out.steeringTorque) < MAX_USER_TORQUE
-
-    if len(CC.orientationNED) == 3:
-      self.pitch.update(CC.orientationNED[1])
-
-    # *** control msgs ***
+  def update(self, enabled, CS, frame, actuators, lead_visible, rlane_visible, llane_visible, pcm_cancel, ldw):
     can_sends = []
 
-    # *** handle secoc reset counter increase ***
-    if self.CP.flags & ToyotaFlags.SECOC.value:
-      if CS.secoc_synchronization['RESET_CNT'] != self.secoc_prev_reset_counter:
-        self.secoc_lka_message_counter = 0
-        self.secoc_lta_message_counter = 0
-        self.secoc_prev_reset_counter = CS.secoc_synchronization['RESET_CNT']
+    # steer
+    steer_max_interp = np.interp(CS.out.vEgo, self.CP.lateralParams.torqueBP, self.CP.lateralParams.torqueV)
+    new_steer = int(round(actuators.steer * steer_max_interp))
+    apply_steer = apply_acttr_steer_torque_limits(new_steer, self.last_steer, self.params)
 
-        expected_mac = build_sync_mac(self.secoc_key, int(CS.secoc_synchronization['TRIP_CNT']), int(CS.secoc_synchronization['RESET_CNT']))
-        if int(CS.secoc_synchronization['AUTHENTICATOR']) != expected_mac:
-          carlog.error("SecOC synchronization MAC mismatch, wrong key?")
+    if CS.CP.carFingerprint in ACC_CAR:
+      isBlinkerOn = CS.out.leftBlinker != CS.out.rightBlinker
+      apply_steer = apply_perodua_steer_torque_limits(new_steer, self.last_steer, CS.out.steeringTorqueEps, isBlinkerOn, self.params)
 
-    # *** steer torque ***
-    new_torque = int(round(actuators.torque * self.params.STEER_MAX))
-    apply_torque = apply_meas_steer_torque_limits(new_torque, self.last_torque, CS.out.steeringTorqueEps, self.params)
+    self.steer_rate_limited = (new_steer != apply_steer) and (apply_steer != 0)
+    if CS.CP.carFingerprint not in NOT_CAN_CONTROLLED:
+      self.steer_rate_limited &= not CS.out.steeringPressed
 
-    # >100 degree/sec steering fault prevention
-    self.steer_rate_counter, apply_steer_req = common_fault_avoidance(abs(CS.out.steeringRateDeg) >= MAX_STEER_RATE, lat_active,
-                                                                      self.steer_rate_counter, MAX_STEER_RATE_FRAMES)
+    # gas, brake
+    apply_gas, apply_brake = compute_gb(actuators.accel)
+    apply_brake *= self.brake_scale
+    apply_brake = np.clip(apply_brake, 0., 1.56)
 
-    if not lat_active:
-      apply_torque = 0
+    if self.using_stock_acc:
+      apply_brake = max(CS.stock_brake_mag * 0.85, apply_brake) # Todo: should try min, it was smooth but brake may fail
 
-    # *** steer angle ***
-    if self.CP.steerControlType == SteerControlType.angle:
-      # If using LTA control, disable LKA and set steering angle command
-      apply_torque = 0
-      apply_steer_req = False
-      if self.frame % 2 == 0:
-        # EPS uses the torque sensor angle to control with, offset to compensate
-        apply_angle = actuators.steeringAngleDeg + CS.out.steeringAngleOffsetDeg
+    if CS.out.gasPressed:
+      apply_brake = 0
+    apply_gas *= self.gas_scale
 
-        # Angular rate limit based on speed
-        self.last_angle = apply_std_steer_angle_limits(apply_angle, self.last_angle, CS.out.vEgoRaw,
-                                                       CS.out.steeringAngleDeg + CS.out.steeringAngleOffsetDeg,
-                                                       CC.latActive, self.params.ANGLE_LIMITS)
+    '''
+    Perodua vehicles supported by Kommu includes vehicles that does not have stock LKAS and ACC.
+    These vehicles are controlled by KommuActuator and is labelled as NOT_CAN_CONTROLLED.
+    KommuActuator uses 4 DACs to control the gas and steer of the vehicle. All values reflects the
+    value of 12 bit DAC.
 
-    self.last_torque = apply_torque
+    Vehicles that comes with Perodua Smart Drive (PSD), includes stock LKAS and ACC. Note that the
+    ACC command is done by giving a set speed so the stock internal controller will obtain the speed.
+    '''
 
-    # toyota can trace shows STEERING_LKA at 42Hz, with counter adding alternatively 1 and 2;
-    # sending it at 100Hz seem to allow a higher rate limit, as the rate limit seems imposed
-    # on consecutive messages
-    steer_command = toyotacan.create_steer_command(self.packer, apply_torque, apply_steer_req)
-    if self.CP.flags & ToyotaFlags.SECOC.value:
-      # TODO: check if this slow and needs to be done by the CANPacker
-      steer_command = add_mac(self.secoc_key,
-                              int(CS.secoc_synchronization['TRIP_CNT']),
-                              int(CS.secoc_synchronization['RESET_CNT']),
-                              self.secoc_lka_message_counter,
-                              steer_command)
-      self.secoc_lka_message_counter += 1
-    can_sends.append(steer_command)
+    if CS.CP.carFingerprint not in NOT_CAN_CONTROLLED:
+      ts = frame * DT_CTRL
 
-    # STEERING_LTA does not seem to allow more rate by sending faster, and may wind up easier
-    if self.frame % 2 == 0 and self.CP.carFingerprint in TSS2_CAR:
-      lta_active = lat_active and self.CP.steerControlType == SteerControlType.angle
-      # cut steering torque with TORQUE_WIND_DOWN when either EPS torque or driver torque is above
-      # the threshold, to limit max lateral acceleration and for driver torque blending respectively.
-      full_torque_condition = (abs(CS.out.steeringTorqueEps) < self.params.STEER_MAX and
-                               abs(CS.out.steeringTorque) < self.params.MAX_LTA_DRIVER_TORQUE_ALLOWANCE)
+      if self.need_clear_engine or frame < 1000:
+        can_sends.append(make_can_msg(2015, b'\x01\x04\x00\x00\x00\x00\x00\x00', 0))
 
-      # TORQUE_WIND_DOWN at 0 ramps down torque at roughly the max down rate of 1500 units/sec
-      torque_wind_down = 100 if lta_active and full_torque_condition else 0
-      can_sends.append(toyotacan.create_lta_steer_command(self.packer, self.CP.steerControlType, self.last_angle,
-                                                          lta_active, self.frame // 2, torque_wind_down))
+      # CAN controlled lateral
+      if (frame % 2) == 0:
 
-      if self.CP.flags & ToyotaFlags.SECOC.value:
-        lta_steer_2 = toyotacan.create_lta_steer_command_2(self.packer, self.frame // 2)
-        lta_steer_2 = add_mac(self.secoc_key,
-                              int(CS.secoc_synchronization['TRIP_CNT']),
-                              int(CS.secoc_synchronization['RESET_CNT']),
-                              self.secoc_lta_message_counter,
-                              lta_steer_2)
-        self.secoc_lta_message_counter += 1
-        can_sends.append(lta_steer_2)
+        # allow stock LDP passthrough
+        self.stockLdw = CS.out.stockAdas.laneDepartureHUD
+        if self.stockLdw:
+            apply_steer = -CS.out.stockAdas.ldpSteerV
 
-    # *** gas and brake ***
+        steer_req = (enabled or self.stockLdw) and CS.lkas_latch
+        can_sends.append(create_can_steer_command(self.packer, apply_steer, steer_req, (frame/2) % 16))
 
-    # on entering standstill, send standstill request
-    if CS.out.standstill and not self.last_standstill and (self.CP.carFingerprint not in NO_STOP_TIMER_CAR):
-      self.standstill_req = True
-    if CS.pcm_acc_status != 8:
-      # pcm entered standstill or it's disabled
-      self.standstill_req = False
+      # CAN controlled longitudinal
+      if (frame % 5) == 0 and CS.CP.openpilotLongitudinalControl:
 
-    self.last_standstill = CS.out.standstill
-
-    # handle UI messages
-    fcw_alert = hud_control.visualAlert == VisualAlert.fcw
-    steer_alert = hud_control.visualAlert in (VisualAlert.steerRequired, VisualAlert.ldw)
-    lead = hud_control.leadVisible or CS.out.vEgo < 12.  # at low speed we always assume the lead is present so ACC can be engaged
-
-    if self.CP.openpilotLongitudinalControl:
-      if self.frame % 3 == 0:
-        # Press distance button until we are at the correct bar length. Only change while enabled to avoid skipping startup popup
-        if self.frame % 6 == 0 and self.CP.openpilotLongitudinalControl:
-          desired_distance = 4 - hud_control.leadDistanceBars
-          if CS.out.cruiseState.enabled and CS.pcm_follow_distance != desired_distance:
-            self.distance_button = not self.distance_button
-          else:
-            self.distance_button = 0
-
-        # internal PCM gas command can get stuck unwinding from negative accel so we apply a generous rate limit
-        pcm_accel_cmd = actuators.accel
-        if CC.longActive:
-          pcm_accel_cmd = rate_limit(pcm_accel_cmd, self.prev_accel, ACCEL_WINDDOWN_LIMIT, ACCEL_WINDUP_LIMIT)
-        self.prev_accel = pcm_accel_cmd
-
-        # calculate amount of acceleration PCM should apply to reach target, given pitch.
-        # clipped to only include downhill angles, avoids erroneously unsetting PERMIT_BRAKING when stopping on uphills
-        accel_due_to_pitch = math.sin(min(self.pitch.x, 0.0)) * ACCELERATION_DUE_TO_GRAVITY
-        # TODO: on uphills this sometimes sets PERMIT_BRAKING low not considering the creep force
-        net_acceleration_request = pcm_accel_cmd + accel_due_to_pitch
-
-        # GVC does not overshoot ego acceleration when starting from stop, but still has a similar delay
-        if not self.CP.flags & ToyotaFlags.SECOC.value:
-          a_ego_blended = float(np.interp(CS.out.vEgo, [1.0, 2.0], [CS.gvc, CS.out.aEgo]))
+        # check if need to revert to stock acc
+        if enabled and CS.out.vEgo > 10: # 36kmh
+          if CS.stock_acc_engaged and self.force_use_stock_acc:
+            self.using_stock_acc = True
         else:
-          a_ego_blended = CS.out.aEgo
+          if enabled:
+            # spam engage until stock ACC engages
+            can_sends.append(perodua_buttons(self.packer, 0, 1, (frame/5) % 16))
 
-        # wind down integral when approaching target for step changes and smooth ramps to reduce overshoot
-        prev_aego = self.aego.x
-        self.aego.update(a_ego_blended)
-        j_ego = (self.aego.x - prev_aego) / (DT_CTRL * 3)
+        # check if need to revert to bukapilot acc
+        if CS.out.vEgo < 8.3: # 30kmh
+          self.using_stock_acc = False
 
-        future_t = float(np.interp(CS.out.vEgo, [2., 5.], [0.25, 0.5]))
-        a_ego_future = a_ego_blended + j_ego * future_t
+        # set stock acc follow speed
+        if enabled and self.using_stock_acc:
+          if CS.out.cruiseState.speedCluster - (CS.stock_acc_set_speed // 3.6) > 0.3:
+            can_sends.append(perodua_buttons(self.packer, 0, 1, (frame/5) % 16))
+          if (CS.stock_acc_set_speed // 3.6) - CS.out.cruiseState.speedCluster > 0.3:
+            can_sends.append(perodua_buttons(self.packer, 1, 0, (frame/5) % 16))
 
-        if CC.longActive:
-          # constantly slowly unwind integral to recover from large temporary errors
-          self.long_pid.i -= ACCEL_PID_UNWIND * float(np.sign(self.long_pid.i))
-
-          error_future = pcm_accel_cmd - a_ego_future
-          pcm_accel_cmd = self.long_pid.update(error_future,
-                                               speed=CS.out.vEgo,
-                                               feedforward=pcm_accel_cmd,
-                                               freeze_integrator=actuators.longControlState != LongCtrlState.pid)
+        # standstill logic
+        if enabled and apply_brake > 0 and CS.out.standstill and CS.CP.carFingerprint not in SNG_CAR:
+          if self.standstill_status == BrakingStatus.STANDSTILL_INIT:
+            self.min_standstill_accel = apply_brake + 0.2
+          apply_brake, self.standstill_status, self.prev_ts = standstill_brake(self.min_standstill_accel, self.prev_ts, ts, self.standstill_status)
         else:
-          self.long_pid.reset()
+          self.standstill_status = BrakingStatus.STANDSTILL_INIT
+          self.prev_ts = ts
 
-        # Along with rate limiting positive jerk above, this greatly improves gas response time
-        # Consider the net acceleration request that the PCM should be applying (pitch included)
-        net_acceleration_request_min = min(actuators.accel + accel_due_to_pitch, net_acceleration_request)
-        if net_acceleration_request_min < 0.2 or stopping or not CC.longActive:
-          self.permit_braking = True
-        elif net_acceleration_request_min > 0.3:
-          self.permit_braking = False
+        # PSD brake logic
+        pump, brake_req, self.last_pump = psd_brake(apply_brake, self.last_pump)
 
-        pcm_accel_cmd = float(np.clip(pcm_accel_cmd, self.params.ACCEL_MIN, self.params.ACCEL_MAX))
+        # the accel is too high at lower speed below 5kmh
+        boost = np.interp(CS.out.vEgo, [0.2, 0.5], [0., 1.0])
+        if CS.CP.carFingerprint == CAR.ATIVA:
+          boost = np.interp(CS.out.vEgo, [0.2, 0.5, 18., 23], [0., 1.0, 1.0, 1.0])
+        des_speed = actuators.speed + min((actuators.accel * boost), 1.0)
 
-        can_sends.append(toyotacan.create_accel_command(self.packer, pcm_accel_cmd, pcm_cancel_cmd, self.permit_braking, self.standstill_req, lead,
-                                                        CS.acc_type, fcw_alert, self.distance_button))
-        self.accel = pcm_accel_cmd
-
-    else:
-      # we can spam can to cancel the system even if we are using lat only control
-      if pcm_cancel_cmd:
-        if self.CP.carFingerprint in UNSUPPORTED_DSU_CAR:
-          can_sends.append(toyotacan.create_acc_cancel_command(self.packer))
+        if self.using_stock_acc:
+          combined_cmd = (CS.stock_acc_cmd / 3.6 + des_speed)/2 if CS.stock_acc_cmd > 0 else des_speed
+          des_speed = min(combined_cmd, des_speed)
+          can_sends.append(perodua_create_accel_command(self.packer, CS.out.cruiseState.speedCluster,
+                                                        CS.out.cruiseState.available, enabled, lead_visible,
+                                                        des_speed, apply_brake, pump, CS.out.cruiseState.setDistance))
         else:
-          can_sends.append(toyotacan.create_accel_command(self.packer, 0, pcm_cancel_cmd, True, False, lead, CS.acc_type, False, self.distance_button))
+          can_sends.append(perodua_create_accel_command(self.packer, CS.out.cruiseState.speedCluster,
+                                                        CS.out.cruiseState.available, enabled, lead_visible,
+                                                        des_speed, apply_brake, pump, CS.out.cruiseState.setDistance))
 
-    # *** hud ui ***
-    if self.CP.carFingerprint != CAR.TOYOTA_PRIUS_V:
-      # ui mesg is at 1Hz but we send asap if:
-      # - there is something to display
-      # - there is something to stop displaying
-      send_ui = False
-      if ((fcw_alert or steer_alert) and not self.alert_active) or \
-         (not (fcw_alert or steer_alert) and self.alert_active):
-        send_ui = True
-        self.alert_active = not self.alert_active
-      elif pcm_cancel_cmd:
-        # forcing the pcm to disengage causes a bad fault sound so play a good sound instead
-        send_ui = True
+        # Let stock AEB kick in only when system not engaged
+        aeb = not enabled and CS.out.stockAdas.aebV
+        can_sends.append(perodua_create_brake_command(self.packer, enabled, brake_req, pump, apply_brake, aeb, (frame/5) % 8))
+        can_sends.append(perodua_create_hud(self.packer, CS.out.cruiseState.available and CS.lkas_latch, enabled, llane_visible, rlane_visible, self.stockLdw, CS.out.stockFcw, CS.out.stockAeb, CS.out.stockAdas.frontDepartureHUD, CS.stock_lkc_off, CS.stock_fcw_off))
 
-      if self.frame % 20 == 0 or send_ui:
-        can_sends.append(toyotacan.create_ui_command(self.packer, steer_alert, pcm_cancel_cmd, hud_control.leftLaneVisible,
-                                                     hud_control.rightLaneVisible, hud_control.leftLaneDepart,
-                                                     hud_control.rightLaneDepart, CC.enabled, CS.lkas_hud))
+    self.last_steer = apply_steer
+    new_actuators = actuators.copy()
+    new_actuators.steer = apply_steer / steer_max_interp
 
-      if (self.frame % 100 == 0 or send_ui) and (self.CP.enableDsu or self.CP.flags & ToyotaFlags.DISABLE_RADAR.value):
-        can_sends.append(toyotacan.create_fcw_command(self.packer, fcw_alert))
-
-    # *** static msgs ***
-    for addr, cars, bus, fr_step, vl in STATIC_DSU_MSGS:
-      if self.frame % fr_step == 0 and self.CP.enableDsu and self.CP.carFingerprint in cars:
-        can_sends.append(CanData(addr, vl, bus))
-
-    # keep radar disabled
-    if self.frame % 20 == 0 and self.CP.flags & ToyotaFlags.DISABLE_RADAR.value:
-      can_sends.append(make_tester_present_msg(0x750, 0, 0xF))
-
-    new_actuators = actuators.as_builder()
-    new_actuators.torque = apply_torque / self.params.STEER_MAX
-    new_actuators.torqueOutputCan = apply_torque
-    new_actuators.steeringAngleDeg = self.last_angle
-    new_actuators.accel = self.accel
-
-    self.frame += 1
     return new_actuators, can_sends
