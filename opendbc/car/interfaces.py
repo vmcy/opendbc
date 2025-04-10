@@ -368,6 +368,16 @@ class CarStateBase(ABC):
     return GEAR_SHIFTER_MAP.get(gear.upper(), GearShifter.unknown)
 
   @staticmethod
+  def parse_set_distance(val_str: str | None) -> structs.CarState.CruiseState.SetDistance:
+    d: dict[str, structs.CarState.CruiseState.SetDistance] = {
+        '1BAR': structs.CarState.CruiseState.SetDistance.aggresive, 
+        '2BAR': structs.CarState.CruiseState.SetDistance.normal, 
+        '3BAR': structs.CarState.CruiseState.SetDistance.chill,
+        '4BAR': structs.CarState.CruiseState.SetDistance.auto,
+    }
+    return d.get(val_str, structs.CarState.CruiseState.SetDistance.normal)
+
+  @staticmethod
   def get_can_parsers(CP) -> dict[StrEnum, CANParser]:
     return {}
 
