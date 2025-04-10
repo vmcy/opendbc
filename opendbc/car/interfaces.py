@@ -118,9 +118,12 @@ class CarInterfaceBase(ABC):
     self.CC: CarControllerBase = self.CarController(dbc_names, CP)
 
   def apply(self, c: structs.CarControl, now_nanos: int | None = None) -> tuple[structs.CarControl.Actuators, list[CanData]]:
+    '''
     if now_nanos is None:
       now_nanos = int(time.monotonic() * 1e9)
     return self.CC.update(c, self.CS, now_nanos)
+    '''
+    pass
 
   @staticmethod
   def get_pid_accel_limits(CP, current_speed, cruise_speed):
@@ -136,6 +139,7 @@ class CarInterfaceBase(ABC):
   @classmethod
   def get_params(cls, candidate: str, fingerprint: dict[int, dict[int, int]], car_fw: list[structs.CarParams.CarFw],
                  experimental_long: bool, docs: bool) -> structs.CarParams:
+    '''
     ret = CarInterfaceBase.get_std_params(candidate)
 
     platform = PLATFORMS[candidate]
@@ -159,12 +163,14 @@ class CarInterfaceBase(ABC):
     ret.tireStiffnessFront, ret.tireStiffnessRear = scale_tire_stiffness(ret.mass, ret.wheelbase, ret.centerToFront, ret.tireStiffnessFactor)
 
     return ret
+    '''
+    pass
 
   @staticmethod
   @abstractmethod
   def _get_params(ret: structs.CarParams, candidate, fingerprint: dict[int, dict[int, int]],
                   car_fw: list[structs.CarParams.CarFw], experimental_long: bool, docs: bool) -> structs.CarParams:
-    raise NotImplementedError
+    pass
 
   @staticmethod
   def init(CP: structs.CarParams, can_recv: CanRecvCallable, can_send: CanSendCallable):
@@ -239,6 +245,7 @@ class CarInterfaceBase(ABC):
     return self.CS.update(self.can_parsers)
 
   def update(self, can_packets: list[tuple[int, list[CanData]]]) -> structs.CarState:
+    '''
     # parse can
     for cp in self.can_parsers.values():
       if cp is not None:
@@ -269,6 +276,8 @@ class CarInterfaceBase(ABC):
     self.CS.out = ret
 
     return ret
+    '''
+    pass
 
 
 class CarStateBase(ABC):
