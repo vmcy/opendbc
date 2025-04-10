@@ -1,6 +1,6 @@
 import math
 import numpy as np
-from opendbc.car import make_can_msg, DT_CTRL
+from opendbc.car import DT_CTRL
 from opendbc.car.toyota.peroduacan import create_steer_command, perodua_create_gas_command, \
                                              perodua_aeb_warning, create_can_steer_command, \
                                              perodua_create_accel_command, \
@@ -175,8 +175,8 @@ class CarController(CarControllerBase):
     if CS.CP.carFingerprint not in NOT_CAN_CONTROLLED:
       ts = frame * DT_CTRL
 
-      if self.need_clear_engine or frame < 1000:
-        can_sends.append(make_can_msg(2015, b'\x01\x04\x00\x00\x00\x00\x00\x00', 0))
+      #if self.need_clear_engine or frame < 1000:
+        #can_sends.append(make_can_msg(2015, b'\x01\x04\x00\x00\x00\x00\x00\x00', 0))
 
       # CAN controlled lateral
       if (frame % 2) == 0:
