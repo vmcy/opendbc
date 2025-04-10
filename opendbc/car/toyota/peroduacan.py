@@ -1,13 +1,19 @@
 import numpy as np
-from cereal import car
 from opendbc.car.common.conversions import Conversions as CV
+from enum import IntEnum
 
-SetDistance = car.CarState.CruiseState.SetDistance
+class SetDistance(IntEnum):
+    UNKNOWN = 0
+    CHILL = 1
+    NORMAL = 2
+    AGGRESSIVE = 3
+    EXPERIMENTAL = 4
+    AUTO = 5
 
 def compute_set_distance(state):
-  if state == SetDistance.aggresive:
+  if state == SetDistance.AGGRESSIVE:
     return 2
-  elif state == SetDistance.normal:
+  elif state == SetDistance.NORMAL:
     return 1
   else:
     return 0
