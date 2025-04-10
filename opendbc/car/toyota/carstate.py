@@ -1,5 +1,4 @@
-import numpy as np
-
+from opendbc.car.common.numpy_fast import mean, interp, clip
 from opendbc.can.can_define import CANDefine
 from opendbc.can.parser import CANParser
 from opendbc.car import Bus, DT_CTRL, create_button_events, structs
@@ -100,7 +99,7 @@ class CarState(CarStateBase):
       cp.vl["WHEEL_SPEED"]['WHEELSPEED_F'],
       cp.vl["WHEEL_SPEED"]['WHEELSPEED_F'],
     )
-    ret.vEgoRaw = float(np.mean([ret.wheelSpeeds.fl, ret.wheelSpeeds.fr, ret.wheelSpeeds.rl, ret.wheelSpeeds.rr]))
+    ret.vEgoRaw = float(mean([ret.wheelSpeeds.fl, ret.wheelSpeeds.fr, ret.wheelSpeeds.rl, ret.wheelSpeeds.rr]))
     ret.vEgo, ret.aEgo = self.update_speed_kf(ret.vEgoRaw)
     ret.vEgoCluster = ret.vEgo * 1.015  # minimum of all the cars
 
@@ -233,9 +232,9 @@ class CarState(CarStateBase):
 
     # set speed in range of 30 - 125kmh only
     #print(self.stock_acc_cmd, self.stock_acc_set_speed, self.cruise_speed * 3.6)
-    self.cruise_speed = np.clip(self.cruise_speed, 30 * CV.KPH_TO_MS, 125 * CV.KPH_TO_MS)
+    self.cruise_speed = clip(self.cruise_speed, 30 * CV.KPH_TO_MS, 125 * CV.KPH_TO_MS)
     ret.cruiseState.speedCluster = self.cruise_speed
-    ret.cruiseState.speed = ret.cruiseState.speedCluster / np.interp(ret.vEgo, [0,140], [1.0615,1.0170])
+    ret.cruiseState.speed = ret.cruiseState.speedCluster / interp(ret.vEgo, [0,140], [1.0615,1.0170])
 
     ret.cruiseState.standstill = False
     ret.cruiseState.nonAdaptive = False

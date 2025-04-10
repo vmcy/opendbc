@@ -1,5 +1,4 @@
-import math
-import numpy as np
+from opendbc.car.common.numpy_fast import interp, clip
 from opendbc.car import DT_CTRL
 from opendbc.car.toyota.peroduacan import create_steer_command, perodua_create_gas_command, \
                                              perodua_aeb_warning, create_can_steer_command, \
@@ -33,16 +32,16 @@ def apply_perodua_steer_torque_limits(apply_torque, apply_torque_last, driver_to
   reduced_torque_mult = 10 if blinkerOn else 1.5
   driver_max_torque = 255 + driver_torque * reduced_torque_mult
   driver_min_torque = -255 - driver_torque * reduced_torque_mult
-  max_steer_allowed = np.clip(driver_max_torque, 0, 255)
-  min_steer_allowed = np.clip(driver_min_torque, -255, 0)
-  apply_torque = np.clip(apply_torque, min_steer_allowed, max_steer_allowed)
+  max_steer_allowed = clip(driver_max_torque, 0, 255)
+  min_steer_allowed = clip(driver_min_torque, -255, 0)
+  apply_torque = clip(apply_torque, min_steer_allowed, max_steer_allowed)
 
   # slow rate if steer torque increases in magnitude
   if apply_torque_last > 0:
-    apply_torque = np.clip(apply_torque, max(apply_torque_last - LIMITS.STEER_DELTA_DOWN, -LIMITS.STEER_DELTA_UP),
+    apply_torque = clip(apply_torque, max(apply_torque_last - LIMITS.STEER_DELTA_DOWN, -LIMITS.STEER_DELTA_UP),
                         apply_torque_last + LIMITS.STEER_DELTA_UP)
   else:
-    apply_torque = np.clip(apply_torque, apply_torque_last - LIMITS.STEER_DELTA_UP,
+    apply_torque = clip(apply_torque, apply_torque_last - LIMITS.STEER_DELTA_UP,
                         min(apply_torque_last + LIMITS.STEER_DELTA_DOWN, LIMITS.STEER_DELTA_UP))
 
   return int(round(float(apply_torque)))
@@ -50,17 +49,17 @@ def apply_perodua_steer_torque_limits(apply_torque, apply_torque_last, driver_to
 def apply_acttr_steer_torque_limits(apply_torque, apply_torque_last, LIMITS):
   # slow rate if steer torque increases in magnitude
   if apply_torque_last > 0:
-    apply_torque = np.clip(apply_torque, max(apply_torque_last - LIMITS.STEER_DELTA_DOWN, -LIMITS.STEER_DELTA_UP),
+    apply_torque = clip(apply_torque, max(apply_torque_last - LIMITS.STEER_DELTA_DOWN, -LIMITS.STEER_DELTA_UP),
                         apply_torque_last + LIMITS.STEER_DELTA_UP)
   else:
-    apply_torque = np.clip(apply_torque, apply_torque_last - LIMITS.STEER_DELTA_UP,
+    apply_torque = clip(apply_torque, apply_torque_last - LIMITS.STEER_DELTA_UP,
                         min(apply_torque_last + LIMITS.STEER_DELTA_DOWN, LIMITS.STEER_DELTA_UP))
 
   return int(round(float(apply_torque)))
 
 def compute_gb(accel):
   gb = float(accel) / 4.0
-  return np.clip(gb, 0.0, 1.0), np.clip(-gb, 0.0, 1.0)
+  return clip(gb, 0.0, 1.0), clip(-gb, 0.0, 1.0)
 
 # reset pump every PUMP_RESET_INTERVAL seconds for. Reset to zero for PUMP_RESET_DURATION
 def standstill_brake(min_accel, ts_last, ts_now, prev_status):
@@ -94,7 +93,7 @@ def psd_brake(apply_brake, last_pump):
   # to prevent brake bleeding.
   # TODO does it really prevent brake bleed?
   if abs(pump - last_pump) > 0.1:
-    pump = last_pump + np.clip(pump - last_pump, -0.1, 0.1)
+    pump = last_pump + clip(pump - last_pump, -0.1, 0.1)
   last_pump = pump
 
   if apply_brake >= BRAKE_THRESHOLD:
@@ -138,7 +137,7 @@ class CarController(CarControllerBase):
     can_sends = []
 
     # steer
-    steer_max_interp = np.interp(CS.out.vEgo, self.CP.lateralParams.torqueBP, self.CP.lateralParams.torqueV)
+    steer_max_interp = interp(CS.out.vEgo, self.CP.lateralParams.torqueBP, self.CP.lateralParams.torqueV)
     new_steer = int(round(actuators.steer * steer_max_interp))
     apply_steer = apply_acttr_steer_torque_limits(new_steer, self.last_steer, self.params)
 
@@ -153,7 +152,7 @@ class CarController(CarControllerBase):
     # gas, brake
     apply_gas, apply_brake = compute_gb(actuators.accel)
     apply_brake *= self.brake_scale
-    apply_brake = np.clip(apply_brake, 0., 1.56)
+    apply_brake = clip(apply_brake, 0., 1.56)
 
     if self.using_stock_acc:
       apply_brake = max(CS.stock_brake_mag * 0.85, apply_brake) # Todo: should try min, it was smooth but brake may fail
@@ -225,9 +224,9 @@ class CarController(CarControllerBase):
         pump, brake_req, self.last_pump = psd_brake(apply_brake, self.last_pump)
 
         # the accel is too high at lower speed below 5kmh
-        boost = np.interp(CS.out.vEgo, [0.2, 0.5], [0., 1.0])
+        boost = interp(CS.out.vEgo, [0.2, 0.5], [0., 1.0])
         if CS.CP.carFingerprint == CAR.ATIVA:
-          boost = np.interp(CS.out.vEgo, [0.2, 0.5, 18., 23], [0., 1.0, 1.0, 1.0])
+          boost = interp(CS.out.vEgo, [0.2, 0.5, 18., 23], [0., 1.0, 1.0, 1.0])
         des_speed = actuators.speed + min((actuators.accel * boost), 1.0)
 
         if self.using_stock_acc:
