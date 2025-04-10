@@ -236,6 +236,17 @@ struct CarState {
   # process meta
   cumLagMs @50 :Float32;
 
+  lkaDisabled @41 :Bool; # Default value is False
+
+  stockAdas @39: StockADAS;
+
+  struct StockADAS {
+    laneDepartureHUD @0 :Bool;
+    frontDepartureHUD @1 :Bool;
+    ldpSteerV @2 :Float32;
+    aebV @3 :Float32;
+  }
+
   struct WheelSpeeds {
     # optional wheel speeds
     fl @0 :Float32;
@@ -252,6 +263,17 @@ struct CarState {
     speedOffset @3 :Float32;
     standstill @4 :Bool;
     nonAdaptive @5 :Bool;
+
+    setDistance @7 :SetDistance;
+
+    enum SetDistance {
+      unknown @0;
+      chill @1;
+      normal @2;
+      aggresive @3;
+      experimental @4;
+      auto @5;
+    }
   }
 
   enum GearShifter {
