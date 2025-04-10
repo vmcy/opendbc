@@ -236,9 +236,12 @@ struct CarState {
   # process meta
   cumLagMs @50 :Float32;
 
-  lkaDisabled @41 :Bool; # Default value is False
+  lkaDisabled @58 :Bool; # Default value is False
 
-  stockAdas @39: StockADAS;
+  stockAdas @59: StockADAS;
+
+  steerWarning @60 :Bool;   # temporary steer unavailable
+  steerError @61 :Bool;     # permanent steer error
 
   struct StockADAS {
     laneDepartureHUD @0 :Bool;
