@@ -71,6 +71,34 @@ class CarInterface(CarInterfaceBase):
 
     return ret
 
+  # returns a car.CarState
+  def update(self, c, can_strings):
+    # to receive CAN Messages
+    self.cp.update_strings(can_strings)
+
+    ret = self.CS.update(self.cp)
+    ret.canValid = self.cp.can_valid
+    ret.steeringRateLimited = self.CC.steer_rate_limited if self.CC is not None else False
+    ret.steeringRateLimited &= self.CS.lkas_rdy
+
+    # events
+    events = self.create_common_events(ret)
+
+    ret.events = events.to_msg()
+
+    self.CS.out = ret.as_reader()
+    return self.CS.out
+
+  # pass in a car.CarControl to be called at 100hz
+  def apply(self, c):
+
+    isLdw = c.hudControl.leftLaneDepart or c.hudControl.rightLaneDepart
+
+    can_sends = self.CC.update(c.enabled, self.CS, self.frame, c.actuators, c.hudControl.leadVisible, c.hudControl.rightLaneVisible, c.hudControl.leftLaneVisible, c.cruiseControl.cancel, isLdw)
+
+    self.frame += 1
+    return can_sends
+  
   @staticmethod
   def init(CP, can_recv, can_send):
     # disable radar if alpha longitudinal toggled on radar-ACC car

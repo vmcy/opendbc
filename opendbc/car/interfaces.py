@@ -20,6 +20,7 @@ from opendbc.can.parser import CANParser
 
 GearShifter = structs.CarState.GearShifter
 ButtonType = structs.CarState.ButtonEvent.Type
+EventName = structs.CarEvent.EventName
 
 V_CRUISE_MAX = 145
 MAX_CTRL_SPEED = (V_CRUISE_MAX + 4) * CV.KPH_TO_MS
@@ -276,6 +277,119 @@ class CarInterfaceBase(ABC):
     '''
     pass
 
+  def create_common_events(self, cs_out, extra_gears=None, pcm_enable=True):
+    events = Events()
+
+    if cs_out.doorOpen:
+      events.add(EventName.doorOpen)
+    if cs_out.seatbeltUnlatched:
+      events.add(EventName.seatbeltNotLatched)
+    if cs_out.gearShifter != GearShifter.drive and (extra_gears is None or
+        cs_out.gearShifter not in extra_gears):
+      events.add(EventName.wrongGear)
+    if cs_out.gearShifter == GearShifter.reverse:
+      events.add(EventName.reverseGear)
+    if not cs_out.cruiseState.available:
+      events.add(EventName.wrongCarMode)
+    if cs_out.espDisabled:
+      events.add(EventName.espDisabled)
+    if cs_out.gasPressed and not self.mads:
+      events.add(EventName.gasPressed)
+    if cs_out.stockFcw:
+      events.add(EventName.stockFcw)
+    if cs_out.stockAeb:
+      events.add(EventName.stockAeb)
+    if cs_out.vEgo > MAX_CTRL_SPEED:
+      events.add(EventName.speedTooHigh)
+    if cs_out.cruiseState.nonAdaptive:
+      events.add(EventName.wrongCruiseMode)
+    if cs_out.brakeHoldActive and self.CP.openpilotLongitudinalControl:
+      events.add(EventName.brakeHold)
+
+    # Handle permanent and temporary steering faults
+    self.steering_unpressed = 0 if cs_out.steeringPressed else self.steering_unpressed + 1
+    if cs_out.steerWarning:
+      # if the user overrode recently, show a less harsh alert
+      if self.silent_steer_warning or cs_out.standstill or self.steering_unpressed < int(1.5 / DT_CTRL):
+        self.silent_steer_warning = True
+        events.add(EventName.steerTempUnavailableSilent)
+      else:
+        events.add(EventName.steerTempUnavailable)
+    else:
+      self.silent_steer_warning = False
+    if cs_out.steerError:
+      events.add(EventName.steerUnavailable)
+
+    # Disable on rising edge of brake. Also disable on brake when speed > 0.
+    if cs_out.brakePressed and (not self.CS.out.brakePressed or not cs_out.standstill):
+      events.add(EventName.pedalPressed)
+
+    # we engage when pcm is active (rising edge)
+    if pcm_enable:
+      if cs_out.cruiseState.enabled and not self.CS.out.cruiseState.enabled:
+        events.add(EventName.pcmEnable)
+      elif not cs_out.cruiseState.enabled:
+        events.add(EventName.pcmDisable)
+
+    return events
+
+class Events:
+  def __init__(self):
+    self.events: List[int] = []
+    self.static_events: List[int] = []
+    self.events_prev = dict.fromkeys(EVENTS.keys(), 0)
+
+  @property
+  def names(self) -> List[int]:
+    return self.events
+
+  def __len__(self) -> int:
+    return len(self.events)
+
+  def add(self, event_name: int, static: bool=False) -> None:
+    if static:
+      self.static_events.append(event_name)
+    self.events.append(event_name)
+
+  def clear(self) -> None:
+    self.events_prev = {k: (v + 1 if k in self.events else 0) for k, v in self.events_prev.items()}
+    self.events = self.static_events.copy()
+
+  def any(self, event_type: str) -> bool:
+    return any(event_type in EVENTS.get(e, {}) for e in self.events)
+
+  def create_alerts(self, event_types: List[str], callback_args=None):
+    if callback_args is None:
+      callback_args = []
+
+    ret = []
+    for e in self.events:
+      types = EVENTS[e].keys()
+      for et in event_types:
+        if et in types:
+          alert = EVENTS[e][et]
+          if not isinstance(alert, Alert):
+            alert = alert(*callback_args)
+
+          if DT_CTRL * (self.events_prev[e] + 1) >= alert.creation_delay:
+            alert.alert_type = f"{EVENT_NAME[e]}/{et}"
+            alert.event_type = et
+            ret.append(alert)
+    return ret
+
+  def add_from_msg(self, events):
+    for e in events:
+      self.events.append(e.name.raw)
+
+  def to_msg(self):
+    ret = []
+    for event_name in self.events:
+      event = car.CarEvent.new_message()
+      event.name = event_name
+      for event_type in EVENTS.get(event_name, {}):
+        setattr(event, event_type, True)
+      ret.append(event)
+    return ret
 
 class CarStateBase(ABC):
   def __init__(self, CP: structs.CarParams):
