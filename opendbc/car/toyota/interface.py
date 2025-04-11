@@ -92,7 +92,7 @@ class CarInterface(CarInterfaceBase):
     #events = self.create_common_events(ret)
     #ret.events = events.to_msg()
 
-    self.CS.out = ret.as_reader()
+    self.CS.out = ret
     return self.CS.out
 
   # pass in a car.CarControl to be called at 100hz
