@@ -26,7 +26,7 @@ class CarInterface(CarInterfaceBase):
     ret.safetyConfigs = [get_safety_config(structs.CarParams.SafetyModel.perodua)]
     ret.safetyConfigs[0].safetyParam = 1
     ret.transmissionType = structs.CarParams.TransmissionType.automatic
-    ret.radarOffCan = True
+    ret.radarUnavailable = True
     ret.enableApgs = False                 # advanced parking guidance system
     ret.enableDsu = False                  # driving support unit
 
