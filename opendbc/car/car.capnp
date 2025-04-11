@@ -757,7 +757,9 @@ struct CarParams {
   brakeMaxVDEPRECATED @16 :List(Float32);
   directAccelControlDEPRECATED @30 :Bool;
   maxSteeringAngleDegDEPRECATED @54 :Float32;
-  longitudinalActuatorDelayLowerBoundDEPRECATED @61 :Float32;
+  longitudinalActuatorDelayLowerBound @61 :Float32;
+  longitudinalActuatorDelayUpperBound @78 :Float32; # Gas/Brake actuator delay in seconds, upper bound
+  speedControlled @79: Bool; # To identify cars that are speed controlled but accel controlled brakes
   stoppingControlDEPRECATED @31 :Bool; # Does the car allow full control even at lows speeds when stopping
   radarTimeStepDEPRECATED @45: Float32 = 0.05;  # time delta between radar updates, 20Hz is very standard
 }
