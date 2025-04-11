@@ -74,7 +74,10 @@ class CarInterface(CarInterfaceBase):
   # returns a car.CarState
   def update(self, can_strings):
     # to receive CAN Messages
-    self.cp.update_strings(can_strings)
+    #self.cp.update_strings(can_strings)
+    for cp in self.can_parsers.values():
+      if cp is not None:
+        cp.update_strings(can_strings)
 
     ret = self.CS.update(self.can_parsers)
     ret.canValid = self.can_parsers.can_valid
