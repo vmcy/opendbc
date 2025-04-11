@@ -86,7 +86,7 @@ class CarInterface(CarInterfaceBase):
     #ret.events = events.to_msg()
 
     self.CS.out = ret.as_reader()
-    return self.CS.out
+    return self.CS.out, []
 
   # pass in a car.CarControl to be called at 100hz
   def apply(self, c):
