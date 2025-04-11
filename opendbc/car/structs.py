@@ -13,7 +13,7 @@ CarState = car.CarState
 RadarData = car.RadarData
 CarControl = car.CarControl
 CarParams = car.CarParams
-CarEvent = car.CarEvent
+CarEvent = car.OnroadEventDEPRECATED
 
 CarStateT = capnp.lib.capnp._StructModule
 RadarDataT = capnp.lib.capnp._StructModule

@@ -6,7 +6,7 @@ $Cxx.namespace("cereal");
 # ******* events causing controls state machine transition *******
 
 # IMPORTANT: This struct is to not be modified so old logs can be parsed
-struct CarEvent @0x9b1657f34caf3ad3 {
+struct OnroadEventDEPRECATED @0x9b1657f34caf3ad3 {
   name @0 :EventName;
 
   # event types
@@ -314,12 +314,12 @@ struct CarState {
   }
 
   # deprecated
-  errorsDEPRECATED @0 :List(CarEvent.EventName);
+  errorsDEPRECATED @0 :List(OnroadEventDEPRECATED.EventName);
   brakeLightsDEPRECATED @19 :Bool;
   steeringRateLimited @29 :Bool;
   canMonoTimesDEPRECATED @12: List(UInt64);
   canRcvTimeoutDEPRECATED @49 :Bool;
-  events @13 :List(CarEvent);
+  events @13 :List(OnroadEventDEPRECATED);
 }
 
 # ******* radar state @ 20hz *******
