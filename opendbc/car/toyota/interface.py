@@ -96,7 +96,7 @@ class CarInterface(CarInterfaceBase):
     return self.CS.out
 
   # pass in a car.CarControl to be called at 100hz
-  def apply(self, c):
+  def apply(self, c, now_nanos):
 
     isLdw = c.hudControl.leftLaneDepart or c.hudControl.rightLaneDepart
 
