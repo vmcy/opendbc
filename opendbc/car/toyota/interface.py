@@ -79,8 +79,12 @@ class CarInterface(CarInterfaceBase):
       if cp is not None:
         cp.update_strings(can_strings)
 
-    ret = self.CS.update(self.can_parsers)
-    ret.canValid = self.can_parsers.can_valid
+    #ret = self.CS.update(self.can_parsers)
+    #ret.canValid = self.can_parsers.can_valid
+
+    ret = self._update()
+    ret.canValid = all(cp.can_valid for cp in self.can_parsers.values())
+
     ret.steeringRateLimited = self.CC.steer_rate_limited if self.CC is not None else False
     ret.steeringRateLimited &= self.CS.lkas_rdy
 
