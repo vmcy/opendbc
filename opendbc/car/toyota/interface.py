@@ -74,10 +74,10 @@ class CarInterface(CarInterfaceBase):
   # returns a car.CarState
   def update(self, can_strings):
     # to receive CAN Messages
-    self.cp.update_strings(can_strings)
+    self.can_parsers.update_strings(can_strings)
 
-    ret = self.CS.update(self.cp)
-    ret.canValid = self.cp.can_valid
+    ret = self.CS.update(self.can_parsers)
+    ret.canValid = self.can_parsers.can_valid
     ret.steeringRateLimited = self.CC.steer_rate_limited if self.CC is not None else False
     ret.steeringRateLimited &= self.CS.lkas_rdy
 
