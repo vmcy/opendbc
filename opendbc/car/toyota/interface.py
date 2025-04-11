@@ -82,9 +82,8 @@ class CarInterface(CarInterfaceBase):
     ret.steeringRateLimited &= self.CS.lkas_rdy
 
     # events
-    events = self.create_common_events(ret)
-
-    ret.events = events.to_msg()
+    #events = self.create_common_events(ret)
+    #ret.events = events.to_msg()
 
     self.CS.out = ret.as_reader()
     return self.CS.out
