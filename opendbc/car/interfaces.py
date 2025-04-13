@@ -121,12 +121,9 @@ class CarInterfaceBase(ABC):
     self.CC: CarControllerBase = self.CarController(dbc_names, CP)
 
   def apply(self, c: structs.CarControl, now_nanos: int | None = None) -> tuple[structs.CarControl.Actuators, list[CanData]]:
-    '''
     if now_nanos is None:
       now_nanos = int(time.monotonic() * 1e9)
     return self.CC.update(c, self.CS, now_nanos)
-    '''
-    pass
 
   @staticmethod
   def get_pid_accel_limits(CP, current_speed, cruise_speed):
