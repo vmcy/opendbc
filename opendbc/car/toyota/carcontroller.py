@@ -140,9 +140,9 @@ class CarController(CarControllerBase):
   def update(self, CC, CS, now_nanos):
     actuators = CC.actuators
     enabled = CC.enabled
-    lead_visible = CC.lead_visible
-    rlane_visible = CC.rlane_visible
-    llane_visible = CC.llane_visible
+    lead_visible = CC.hudControl.lead_visible
+    rlane_visible = CC.hudControl.rlane_visible
+    llane_visible = CC.hudControl.llane_visible
     can_sends = []
 
     # steer
