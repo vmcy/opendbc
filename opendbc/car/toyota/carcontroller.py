@@ -260,6 +260,8 @@ class CarController(CarControllerBase):
     new_actuators = actuators.as_builder()
     new_actuators.torque = apply_steer / steer_max_interp
     new_actuators.torqueOutputCan = apply_steer
+    new_actuators.brake = apply_brake  # if you're computing it
+    new_actuators.gas = apply_gas      # if you're computing it
 
     self.frame += 1
 
