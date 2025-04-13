@@ -228,7 +228,7 @@ class CarController(CarControllerBase):
 
         #if CS.CP.carFingerprint == CAR.ATIVA:
           #boost = interp(CS.out.vEgo, [0.2, 0.5, 18., 23], [0., 1.0, 1.0, 1.0])
-          
+
         des_speed = actuators.speed + min((actuators.accel * boost), 1.0)
 
         if self.using_stock_acc:
@@ -248,7 +248,7 @@ class CarController(CarControllerBase):
         can_sends.append(perodua_create_hud(self.packer, CS.out.cruiseState.available and CS.lkas_latch, enabled, llane_visible, rlane_visible, self.stockLdw, CS.out.stockFcw, CS.out.stockAeb, CS.out.stockAdas.frontDepartureHUD, CS.stock_lkc_off, CS.stock_fcw_off))
 
     self.last_steer = apply_steer
-    new_actuators = actuators.copy()
+    new_actuators = actuators.as_builder()
     new_actuators.torque = apply_steer / steer_max_interp
 
     return new_actuators, can_sends
