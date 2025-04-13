@@ -35,7 +35,7 @@ def create_can_steer_command(packer, steer, steer_req, raw_cnt):
     "SET_ME_1_2": 1,
   }
 
-  dat = packer.make_can_msg("STEERING_LKAS", 0, values)[2]
+  _, dat, _ = packer.make_can_msg("STEERING_LKAS", 0, values)
   crc = lkc_checksum(0x1d0, dat[:-1])
   values["CHECKSUM"] = crc
 
@@ -53,7 +53,7 @@ def create_steer_command(packer, command, direction, enable, idx):
     "COUNTER_STEERING": idx & 0xF,
   }
 
-  dat = packer.make_can_msg("TORQUE_COMMAND", 0, values)[2]
+  _, dat, _  = packer.make_can_msg("TORQUE_COMMAND", 0, values)
   crc = perodua_checksum(514, dat[:-1])
   values["CHECKSUM_STEERING"] = crc
 
@@ -72,7 +72,7 @@ def perodua_create_gas_command(packer, gas_amount, enable, idx):
     values["GAS_COMMAND"] = gas_amount
     values["GAS_COMMAND2"] = gas_amount
 
-  dat = packer.make_can_msg("GAS_COMMAND", 0, values)[2]
+  _, dat, _ = packer.make_can_msg("GAS_COMMAND", 0, values)
   checksum = perodua_checksum(512, dat[:-1])
   values["CHECKSUM_PEDAL"] = checksum
 
@@ -84,7 +84,7 @@ def perodua_aeb_warning(packer):
     "AEB_ALARM": 1,
   }
 
-  dat = packer.make_can_msg("ADAS_HUD", 0, values)[2]
+  _, dat, _ = packer.make_can_msg("ADAS_HUD", 0, values)
   checksum = perodua_checksum(681, dat[:-1])
   values["CHECKSUM"] = checksum
 
@@ -102,7 +102,7 @@ def aeb_brake_command(packer, enabled, decel_cmd):
     "SET_ME_X1B": 0x0 if (enabled and decel_req) else 0,
   }
 
-  dat = packer.make_can_msg("ADAS_AEB", 0, values)[2]
+  _, dat, _ = packer.make_can_msg("ADAS_AEB", 0, values)
   crc = (perodua_checksum(680, dat[:-1]))
   values["CHECKSUM"] = crc
 
@@ -129,7 +129,7 @@ def perodua_create_brake_command(packer, enabled, decel_req, pump, decel_cmd, ae
     "AEB_1019": aeb,
   }
 
-  dat = packer.make_can_msg("ACC_BRAKE", 0, values)[2]
+  _, dat, _ = packer.make_can_msg("ACC_BRAKE", 0, values)
   crc = (perodua_checksum(0x271, dat[:-1]))
   values["CHECKSUM"] = crc
 
@@ -151,7 +151,7 @@ def perodua_create_accel_command(packer, set_speed, acc_rdy, enabled, is_lead, d
     "ACC_CMD": des_speed * CV.MS_TO_KPH if enabled else 0,
   }
 
-  dat = packer.make_can_msg("ACC_CMD_HUD", 0, values)[2]
+  _, dat, _ = packer.make_can_msg("ACC_CMD_HUD", 0, values)
   crc = (perodua_checksum(0x273, dat[:-1]))
   values["CHECKSUM"] = crc
 
@@ -173,7 +173,7 @@ def perodua_create_hud(packer, lkas_rdy, enabled, llane_visible, rlane_visible, 
     "FCW_DISABLE": fcw_off,
   }
 
-  dat = packer.make_can_msg("LKAS_HUD", 0, values)[2]
+  _, dat, _ = packer.make_can_msg("LKAS_HUD", 0, values)
   crc = (perodua_checksum(0x274, dat[:-1]))
   values["CHECKSUM"] = crc
 
@@ -191,7 +191,7 @@ def perodua_buttons(packer, set_button, res_button, counter):
     "COUNTER" : counter,
   }
 
-  dat = packer.make_can_msg("PCM_BUTTONS", 0, values)[2]
+  _, dat, _ = packer.make_can_msg("PCM_BUTTONS", 0, values)
   crc = (perodua_checksum(520, dat[:-1]))
   values["CHECKSUM"] = crc
 
