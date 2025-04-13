@@ -107,7 +107,10 @@ class CarController(CarControllerBase):
   def __init__(self, dbc_names, CP):
     super().__init__(dbc_names, CP)
     self.params = CarControllerParams(self.CP)
-    
+
+    self.last_standstill = False
+    self.standstill_req = False
+    self.last_torque = 0
     self.last_steer = 0
     self.steer_rate_limited = False
     self.steering_direction = False
@@ -133,7 +136,13 @@ class CarController(CarControllerBase):
     #self.force_use_stock_acc = f.has("StockAcc")
     self.force_use_stock_acc = True
 
-  def update(self, enabled, CS, frame, actuators, lead_visible, rlane_visible, llane_visible, pcm_cancel, ldw):
+  #def update(self, enabled, CS, frame, actuators, lead_visible, rlane_visible, llane_visible, pcm_cancel, ldw):
+  def update(self, CC, CS, now_nanos):
+    actuators = CC.actuators
+    enabled = CC.enabled
+    lead_visible = CC.lead_visible
+    rlane_visible = CC.rlane_visible
+    llane_visible = CC.llane_visible
     can_sends = []
 
     # steer
@@ -172,13 +181,13 @@ class CarController(CarControllerBase):
     '''
 
     if CS.CP.carFingerprint not in NOT_CAN_CONTROLLED:
-      ts = frame * DT_CTRL
+      ts = self.frame * DT_CTRL
 
       #if self.need_clear_engine or frame < 1000:
         #can_sends.append(make_can_msg(2015, b'\x01\x04\x00\x00\x00\x00\x00\x00', 0))
 
       # CAN controlled lateral
-      if (frame % 2) == 0:
+      if (self.frame % 2) == 0:
 
         # allow stock LDP passthrough
         self.stockLdw = CS.out.stockAdas.laneDepartureHUD
@@ -186,10 +195,10 @@ class CarController(CarControllerBase):
             apply_steer = -CS.out.stockAdas.ldpSteerV
 
         steer_req = (enabled or self.stockLdw) and CS.lkas_latch
-        can_sends.append(create_can_steer_command(self.packer, apply_steer, steer_req, (frame/2) % 16))
+        can_sends.append(create_can_steer_command(self.packer, apply_steer, steer_req, (self.frame/2) % 16))
 
       # CAN controlled longitudinal
-      if (frame % 5) == 0 and CS.CP.openpilotLongitudinalControl:
+      if (self.frame % 5) == 0 and CS.CP.openpilotLongitudinalControl:
 
         # check if need to revert to stock acc
         if enabled and CS.out.vEgo > 10: # 36kmh
@@ -198,7 +207,7 @@ class CarController(CarControllerBase):
         else:
           if enabled:
             # spam engage until stock ACC engages
-            can_sends.append(perodua_buttons(self.packer, 0, 1, (frame/5) % 16))
+            can_sends.append(perodua_buttons(self.packer, 0, 1, (self.frame/5) % 16))
 
         # check if need to revert to bukapilot acc
         if CS.out.vEgo < 8.3: # 30kmh
@@ -207,9 +216,9 @@ class CarController(CarControllerBase):
         # set stock acc follow speed
         if enabled and self.using_stock_acc:
           if CS.out.cruiseState.speedCluster - (CS.stock_acc_set_speed // 3.6) > 0.3:
-            can_sends.append(perodua_buttons(self.packer, 0, 1, (frame/5) % 16))
+            can_sends.append(perodua_buttons(self.packer, 0, 1, (self.frame/5) % 16))
           if (CS.stock_acc_set_speed // 3.6) - CS.out.cruiseState.speedCluster > 0.3:
-            can_sends.append(perodua_buttons(self.packer, 1, 0, (frame/5) % 16))
+            can_sends.append(perodua_buttons(self.packer, 1, 0, (self.frame/5) % 16))
 
         # standstill logic
         if enabled and apply_brake > 0 and CS.out.standstill and CS.CP.carFingerprint not in SNG_CAR:
@@ -244,11 +253,14 @@ class CarController(CarControllerBase):
 
         # Let stock AEB kick in only when system not engaged
         aeb = not enabled and CS.out.stockAdas.aebV
-        can_sends.append(perodua_create_brake_command(self.packer, enabled, brake_req, pump, apply_brake, aeb, (frame/5) % 8))
+        can_sends.append(perodua_create_brake_command(self.packer, enabled, brake_req, pump, apply_brake, aeb, (self.frame/5) % 8))
         can_sends.append(perodua_create_hud(self.packer, CS.out.cruiseState.available and CS.lkas_latch, enabled, llane_visible, rlane_visible, self.stockLdw, CS.out.stockFcw, CS.out.stockAeb, CS.out.stockAdas.frontDepartureHUD, CS.stock_lkc_off, CS.stock_fcw_off))
 
     self.last_steer = apply_steer
     new_actuators = actuators.as_builder()
     new_actuators.torque = apply_steer / steer_max_interp
+    new_actuators.torqueOutputCan = apply_steer
+
+    self.frame += 1
 
     return new_actuators, can_sends
