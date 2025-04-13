@@ -74,6 +74,7 @@ class CarState(CarStateBase):
     self.is_minus_btn_latch = False
     # shared by both + and - button, since release of another button will reset this
     self.rising_edge_since = 0
+    self.last_frame = time()
     self.dt = 0
 
     self.stock_lkc_off = True
