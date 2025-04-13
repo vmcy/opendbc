@@ -225,8 +225,10 @@ class CarController(CarControllerBase):
 
         # the accel is too high at lower speed below 5kmh
         boost = interp(CS.out.vEgo, [0.2, 0.5], [0., 1.0])
-        if CS.CP.carFingerprint == CAR.ATIVA:
-          boost = interp(CS.out.vEgo, [0.2, 0.5, 18., 23], [0., 1.0, 1.0, 1.0])
+
+        #if CS.CP.carFingerprint == CAR.ATIVA:
+          #boost = interp(CS.out.vEgo, [0.2, 0.5, 18., 23], [0., 1.0, 1.0, 1.0])
+          
         des_speed = actuators.speed + min((actuators.accel * boost), 1.0)
 
         if self.using_stock_acc:
