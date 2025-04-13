@@ -138,7 +138,7 @@ class CarController(CarControllerBase):
 
     # steer
     steer_max_interp = interp(CS.out.vEgo, self.CP.lateralParams.torqueBP, self.CP.lateralParams.torqueV)
-    new_steer = int(round(actuators.steer * steer_max_interp))
+    new_steer = int(round(actuators.torque * steer_max_interp))
     apply_steer = apply_acttr_steer_torque_limits(new_steer, self.last_steer, self.params)
 
     if CS.CP.carFingerprint in ACC_CAR:
@@ -247,6 +247,6 @@ class CarController(CarControllerBase):
 
     self.last_steer = apply_steer
     new_actuators = actuators.copy()
-    new_actuators.steer = apply_steer / steer_max_interp
+    new_actuators.torque = apply_steer / steer_max_interp
 
     return new_actuators, can_sends
