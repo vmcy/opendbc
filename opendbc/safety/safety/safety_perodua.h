@@ -5,6 +5,7 @@
 // === RX HOOK ===
 // This version just always allows controls
 static void perodua_rx_hook(const CANPacket_t *to_push) {
+  UNUSED(to_push);
   controls_allowed = true;
 }
 
