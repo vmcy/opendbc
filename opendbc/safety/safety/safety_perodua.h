@@ -14,7 +14,7 @@ static void perodua_rx_hook(const CANPacket_t *to_push) {
 static bool perodua_tx_hook(const CANPacket_t *to_send) {
   int addr = GET_ADDR(to_send);
 
-  return true
+  return true;
 
   // Replace with actual LKAS command ID later
   if (addr == 0x2E4) {
