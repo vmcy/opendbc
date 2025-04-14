@@ -22,8 +22,8 @@ class CarInterface(CarInterfaceBase):
 
   @staticmethod
   def _get_params(ret: structs.CarParams, candidate, fingerprint, car_fw, experimental_long, docs) -> structs.CarParams:
-    ret.brand = "perodua"
-    ret.safetyConfigs = [get_safety_config(structs.CarParams.SafetyModel.perodua)]
+    ret.brand = "toyota"
+    ret.safetyConfigs = [get_safety_config(structs.CarParams.SafetyModel.noOutput)]
     ret.safetyConfigs[0].safetyParam = 1
     ret.transmissionType = structs.CarParams.TransmissionType.automatic
     ret.radarUnavailable = True
