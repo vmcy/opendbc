@@ -34,7 +34,7 @@ static safety_config perodua_init(uint16_t param) {
   };
 
   static const CanMsg PERODUA_TX_MSGS[] = {
-    {0x464 0, 5, false},  // steering cmd addr
+    {0x464, 0, 5, false},  // steering cmd addr
   };
 
   safety_config cfg = BUILD_SAFETY_CFG(perodua_rx_checks, PERODUA_TX_MSGS);
