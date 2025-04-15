@@ -16,8 +16,8 @@ static bool perodua_tx_hook(const CANPacket_t *to_send) {
 
   return true;
 
-  // Replace with actual LKAS command ID later
-  if (addr == 0x2E4) {
+  // LKAS command ID 
+  if (addr == 0x464) {
     return true;
   }
 
@@ -29,13 +29,15 @@ static bool perodua_tx_hook(const CANPacket_t *to_send) {
 static safety_config perodua_init(uint16_t param) {
   UNUSED(param);
 
-  static RxCheck empty_rx_checks[] = {};
-
-  static const CanMsg PERODUA_TX_MSGS[] = {
-    {0x2E4, 0, 5, false},  // Replace this with your actual steering cmd addr
+  static RxCheck perodua_rx_checks[] = {
+    {.msg = {{0x416, 0, 8, .frequency = 50U}, {0}, {0}}},  // Wheel speed signals (WHEELSPEED_F, WHEELSPEED_B)
   };
 
-  safety_config cfg = BUILD_SAFETY_CFG(empty_rx_checks, PERODUA_TX_MSGS);
+  static const CanMsg PERODUA_TX_MSGS[] = {
+    {0x464 0, 5, false},  // steering cmd addr
+  };
+
+  safety_config cfg = BUILD_SAFETY_CFG(perodua_rx_checks, PERODUA_TX_MSGS);
   cfg.disable_forwarding = true;
   return cfg;
 }
