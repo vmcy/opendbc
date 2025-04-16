@@ -6,6 +6,10 @@
 // This version just always allows controls
 static void perodua_rx_hook(const CANPacket_t *to_push) {
   UNUSED(to_push);
+
+  int addr = GET_ADDR(to_push);
+  printf("RX hook received msg: 0x%X on bus %d\n", addr, GET_BUS(to_push));
+
   controls_allowed = true;
 }
 
@@ -13,6 +17,8 @@ static void perodua_rx_hook(const CANPacket_t *to_push) {
 // Only allow LKAS steering command through
 static bool perodua_tx_hook(const CANPacket_t *to_send) {
   int addr = GET_ADDR(to_send);
+
+  printf("TX hook sent msg: 0x%X", addr);
 
   return true;
 
@@ -29,17 +35,25 @@ static bool perodua_tx_hook(const CANPacket_t *to_send) {
 static safety_config perodua_init(uint16_t param) {
   UNUSED(param);
 
+  // Wheel speed signals (WHEELSPEED_F, WHEELSPEED_B)
   static RxCheck perodua_rx_checks[] = {
-    {.msg = {{0x1A0, 0, 8, .frequency = 50U}, {0}, {0}}},  // Wheel speed signals (WHEELSPEED_F, WHEELSPEED_B)
+    {.msg = {{0x1A0, 0, 8, .ignore_checksum = true, .ignore_counter = true, .frequency = 56U}, { 0 }, { 0 }}},
   };
+
+  // Wheel Speed CLEAN
+  /*
+  static RxCheck perodua_rx_checks[] = {
+    {.msg = {{0x260, 0, 8, .ignore_checksum = true, .ignore_counter = true, .frequency = 21U}, { 0 }, { 0 }}},
+  };
+  */
 
   static const CanMsg PERODUA_TX_MSGS[] = {
     {0x1D0, 0, 5, false},  // steering cmd addr
   };
 
-  safety_config cfg = BUILD_SAFETY_CFG(perodua_rx_checks, PERODUA_TX_MSGS);
-  cfg.disable_forwarding = true;
-  return cfg;
+  safety_config ret = BUILD_SAFETY_CFG(perodua_rx_checks, PERODUA_TX_MSGS);
+  ret.disable_forwarding = true;
+  return ret;
 }
 
 // === REGISTER ===
