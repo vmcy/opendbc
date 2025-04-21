@@ -174,8 +174,8 @@ class CarState(CarStateBase):
     #print(f"SET_MINUS: {bool(cp.vl["PCM_BUTTONS"]["SET_MINUS"])}")
     #ret.cruiseState.available = bool(cp.vl["ACC_CMD_HUD"]["SET_ME_1_2"])
 
-    print(f"ACC_READY: {bool(cp.vl["PCM_BUTTONS"]["ACC_READY"])}")
-    ret.cruiseState.available = bool(cp.vl["PCM_BUTTONS"]["ACC_READY"])
+    print(f"ACC_READY: {bool(cp.vl["PCM_BUTTONS"]["ACC_RDY"])}")
+    ret.cruiseState.available = bool(cp.vl["PCM_BUTTONS"]["ACC_RDY"])
     distance_val = int(cp.vl["ACC_CMD_HUD"]['FOLLOW_DISTANCE'])
     ret.cruiseState.setDistance = self.parse_set_distance(self.set_distance_values.get(distance_val, None))
 
