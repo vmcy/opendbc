@@ -304,62 +304,6 @@ class CarState(CarStateBase):
 
   @staticmethod
   def get_can_parsers(CP):
-    '''
-    pt_messages = [
-      ("WHEELSPEED_F", 0.),
-      ("GEAR", 0),
-      ("APPS_1", 0.),
-      ("BRAKE_PRESSURE", 0.),
-      ("BRAKE_ENGAGED", 0),
-      ("INTERCEPTOR_GAS", 0),
-      ("GENERIC_TOGGLE", 0),
-      ("FOG_LIGHT", 0),
-      ("LEFT_SIGNAL", 0),
-      ("RIGHT_SIGNAL", 0),
-      ("SEAT_BELT_WARNING", 0),
-      ("MAIN_DOOR", 1),
-      ("LEFT_FRONT_DOOR", 1),
-      ("RIGHT_BACK_DOOR", 1),
-      ("LEFT_BACK_DOOR", 1)
-    ]
-
-    pt_messages.append(("BSM_CHIME", 0))
-    pt_messages.append(("SEAT_BELT_WARNING2", 0))
-    pt_messages.append(("STEER_ANGLE", 0.))
-    pt_messages.append(("MAIN_TORQUE", 0.))
-    pt_messages.append(("STEERING_TORQUE", 0.))
-    pt_messages.append(("ACC_RDY", 0))
-    pt_messages.append(("GAS_PRESSED", 0))
-    pt_messages.append(("SET_MINUS", 0))
-    pt_messages.append(("SET_MINUS", 0))
-    pt_messages.append(("RES_PLUS", 0))
-    pt_messages.append(("CANCEL", 0))
-    pt_messages.append(("RES_PLUS", 0))
-    pt_messages.append(("CANCEL", 0))
-    pt_messages.append(("PEDAL_DEPRESSED", 0))
-    pt_messages.append(("LKAS_ENGAGED", 0))
-    pt_messages.append(("LDA_OFF", 0))
-    pt_messages.append(("FCW_DISABLE", 0))
-    pt_messages.append(("LDA_RELATED1", 0))
-    pt_messages.append(("LDA_ALERT", 0))
-    pt_messages.append(("LKAS_SET", 0))
-    pt_messages.append(("ACC_CMD", 0))
-    pt_messages.append(("SET_ME_1_2", 0))
-    pt_messages.append(("STEER_CMD", 0))
-    pt_messages.append(("STEER_REQ", 0))
-    pt_messages.append(("FRONT_DEPART", 0))
-    pt_messages.append(("AEB_BRAKE", 0))
-    pt_messages.append(("AEB_ALARM", 0))
-    pt_messages.append(("SET_SPEED", 0))
-    pt_messages.append(("FOLLOW_DISTANCE", 0))
-    pt_messages.append(("LDA_ALERT", 0))
-    pt_messages.append(("GAS_PEDAL_STEP", 0))
-    pt_messages.append(("UI_SPEED", 0))
-    pt_messages.append(("LKC_BTN", 0))
-    pt_messages.append(("CRUISE_STANDSTILL", 0))
-    pt_messages.append(("MAGNITUDE", 0))
-    pt_messages.append(("AEB_1019", 0))
-    '''
 
     pt_messages = [
       ("WHEEL_SPEED", 0.),
@@ -383,62 +327,6 @@ class CarState(CarStateBase):
     pt_messages.append(("BUTTONS", 0))
     pt_messages.append(("ACC_BRAKE", 0))
 
-    '''
-    pt_messages = [
-      ("WHEELSPEED_F", "WHEEL_SPEED", 0.),
-      ("GEAR", "TRANSMISSION", 0),
-      ("APPS_1", "GAS_PEDAL", 0.),
-      ("BRAKE_PRESSURE", "BRAKE", 0.),
-      ("BRAKE_ENGAGED", "BRAKE", 0),
-      ("INTERCEPTOR_GAS", "GAS_SENSOR", 0),
-      ("GENERIC_TOGGLE", "RIGHT_STALK", 0),
-      ("FOG_LIGHT", "RIGHT_STALK", 0),
-      ("LEFT_SIGNAL", "METER_CLUSTER", 0),
-      ("RIGHT_SIGNAL", "METER_CLUSTER", 0),
-      ("SEAT_BELT_WARNING", "METER_CLUSTER", 0),
-      ("MAIN_DOOR", "METER_CLUSTER", 1),
-      ("LEFT_FRONT_DOOR", "METER_CLUSTER", 1),
-      ("RIGHT_BACK_DOOR", "METER_CLUSTER", 1),
-      ("LEFT_BACK_DOOR", "METER_CLUSTER", 1)
-    ]
-
-    pt_messages.append(("BSM_CHIME","BSM", 0))
-    pt_messages.append(("SEAT_BELT_WARNING2","METER_CLUSTER", 0))
-    pt_messages.append(("STEER_ANGLE", "STEERING_MODULE", 0.))
-    pt_messages.append(("MAIN_TORQUE", "STEERING_MODULE", 0.))
-    pt_messages.append(("STEERING_TORQUE", "EPS_SHAFT_TORQUE", 0.))
-    pt_messages.append(("ACC_RDY", "PCM_BUTTONS", 0))
-    pt_messages.append(("GAS_PRESSED", "PCM_BUTTONS_HYBRID", 0))
-    pt_messages.append(("SET_MINUS", "PCM_BUTTONS", 0))
-    pt_messages.append(("SET_MINUS", "PCM_BUTTONS_HYBRID", 0))
-    pt_messages.append(("RES_PLUS", "PCM_BUTTONS_HYBRID", 0))
-    pt_messages.append(("CANCEL", "PCM_BUTTONS_HYBRID", 0))
-    pt_messages.append(("RES_PLUS","PCM_BUTTONS", 0))
-    pt_messages.append(("CANCEL","PCM_BUTTONS", 0))
-    pt_messages.append(("PEDAL_DEPRESSED","PCM_BUTTONS", 0))
-    pt_messages.append(("LKAS_ENGAGED", "LKAS_HUD", 0))
-    pt_messages.append(("LDA_OFF", "LKAS_HUD", 0))
-    pt_messages.append(("FCW_DISABLE", "LKAS_HUD", 0))
-    pt_messages.append(("LDA_RELATED1", "LKAS_HUD", 0))
-    pt_messages.append(("LDA_ALERT", "LKAS_HUD", 0))
-    pt_messages.append(("LKAS_SET", "LKAS_HUD", 0))
-    pt_messages.append(("ACC_CMD", "ACC_CMD_HUD", 0))
-    pt_messages.append(("SET_ME_1_2", "ACC_CMD_HUD", 0))
-    pt_messages.append(("STEER_CMD", "STEERING_LKAS", 0))
-    pt_messages.append(("STEER_REQ", "STEERING_LKAS", 0))
-    pt_messages.append(("FRONT_DEPART", "LKAS_HUD", 0))
-    pt_messages.append(("AEB_BRAKE", "LKAS_HUD", 0))
-    pt_messages.append(("AEB_ALARM", "LKAS_HUD", 0))
-    pt_messages.append(("SET_SPEED", "ACC_CMD_HUD", 0))
-    pt_messages.append(("FOLLOW_DISTANCE", "ACC_CMD_HUD", 0))
-    pt_messages.append(("LDA_ALERT", "LKAS_HUD", 0))
-    pt_messages.append(("GAS_PEDAL_STEP", "GAS_PEDAL_2", 0))
-    pt_messages.append(("UI_SPEED", "BUTTONS", 0))
-    pt_messages.append(("LKC_BTN", "BUTTONS", 0))
-    pt_messages.append(("CRUISE_STANDSTILL", "ACC_BRAKE", 0))
-    pt_messages.append(("MAGNITUDE", "ACC_BRAKE", 0))
-    pt_messages.append(("AEB_1019", "ACC_BRAKE", 0))
-    '''
     cam_messages = []
 
     return {
