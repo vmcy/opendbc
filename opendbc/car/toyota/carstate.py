@@ -170,9 +170,12 @@ class CarState(CarStateBase):
       self.lkas_latch = not self.lkas_latch
       self.lkas_btn_rising_edge_seen = False
 
-    print(f"SET_ME_1_2: {bool(cp.vl["ACC_CMD_HUD"]["SET_ME_1_2"])}")
-    print(f"SET_MINUS: {bool(cp.vl["PCM_BUTTONS"]["SET_MINUS"])}")
-    ret.cruiseState.available = bool(cp.vl["ACC_CMD_HUD"]["SET_ME_1_2"])
+    #print(f"SET_ME_1_2: {bool(cp.vl["ACC_CMD_HUD"]["SET_ME_1_2"])}")
+    #print(f"SET_MINUS: {bool(cp.vl["PCM_BUTTONS"]["SET_MINUS"])}")
+    #ret.cruiseState.available = bool(cp.vl["ACC_CMD_HUD"]["SET_ME_1_2"])
+
+    print(f"ACC_READY: {bool(cp.vl["PCM_BUTTONS"]["ACC_READY"])}")
+    ret.cruiseState.available = bool(cp.vl["PCM_BUTTONS"]["ACC_READY"])
     distance_val = int(cp.vl["ACC_CMD_HUD"]['FOLLOW_DISTANCE'])
     ret.cruiseState.setDistance = self.parse_set_distance(self.set_distance_values.get(distance_val, None))
 
