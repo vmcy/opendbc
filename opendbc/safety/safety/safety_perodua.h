@@ -33,7 +33,7 @@ static safety_config perodua_init(uint16_t param) {
   static RxCheck perodua_rx_checks[] = {
     {.msg = {{0x1A0, 0, 8, .ignore_checksum = true, .ignore_counter = true, .frequency = 56U}, { 0 }, { 0 }}},  // WHEEL_SPEED
     {.msg = {{0x208, 0, 6, .ignore_checksum = true, .ignore_counter = true, .frequency = 31U}, { 0 }, { 0 }}},  // PCM_BUTTONS
-    {.msg = {{0x273, 2, 8, .ignore_checksum = true, .ignore_counter = true, .frequency = 20U}, { 0 }, { 0 }}},  // ACC_CMD_HUD
+    {.msg = {{0x273, 0, 8, .ignore_checksum = true, .ignore_counter = true, .frequency = 10U}, { 0 }, { 0 }}},  // ACC_CMD_HUD
   };
 
   // Wheel Speed CLEAN
