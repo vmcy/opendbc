@@ -25,6 +25,18 @@ static bool perodua_tx_hook(const CANPacket_t *to_send) {
   return false;
 }
 
+static bool perodua_fwd_hook(int bus_num, int addr) {
+  UNUSED(addr);
+  bool block_msg = true;
+
+  if (bus_num == 2) {
+    block_msg = false;
+  }
+
+  // Allow messages from bus 2 to be forwarded to bus 0
+  return block_msg
+}
+
 // === INIT ===
 // No checks yet, just register hooks to satisfy Panda
 static safety_config perodua_init(uint16_t param) {
@@ -57,4 +69,5 @@ const safety_hooks perodua_hooks = {
   .init = perodua_init,
   .rx = perodua_rx_hook,
   .tx = perodua_tx_hook,
+  .fwd = perodua_fwd_hook,
 };
