@@ -34,7 +34,7 @@ static bool perodua_fwd_hook(int bus_num, int addr) {
   }
 
   // Allow messages from bus 2 to be forwarded to bus 0
-  return block_msg
+  return block_msg;
 }
 
 // === INIT ===
