@@ -30,9 +30,9 @@ static bool perodua_tx_hook(const CANPacket_t *to_send) {
 static safety_config perodua_init(uint16_t param) {
   UNUSED(param);
 
-  // Wheel speed signals (WHEELSPEED_F, WHEELSPEED_B)
   static RxCheck perodua_rx_checks[] = {
-    {.msg = {{0x1A0, 0, 8, .ignore_checksum = true, .ignore_counter = true, .frequency = 56U}, { 0 }, { 0 }}},
+    {.msg = {{0x1A0, 0, 8, .ignore_checksum = true, .ignore_counter = true, .frequency = 56U}, { 0 }, { 0 }}},  // WHEEL_SPEED
+    {.msg = {{0x208, 0, 6, .ignore_checksum = true, .ignore_counter = true, .frequency = 31U}, { 0 }, { 0 }}},  // PCM_BUTTONS
   };
 
   // Wheel Speed CLEAN
