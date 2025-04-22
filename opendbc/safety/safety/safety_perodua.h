@@ -27,13 +27,11 @@ static bool perodua_tx_hook(const CANPacket_t *to_send) {
 
 static bool perodua_fwd_hook(int bus_num, int addr) {
   UNUSED(addr);
-  bool block_msg = true;
+  bool block_msg = false;
 
   if (bus_num == 2) {
-    block_msg = false;
-  } else if (bus_num == 192) {
-    block_msg = false;
-  } 
+    block_msg = true;
+  }
 
   // Allow messages from bus 2 to be forwarded to bus 0
   return block_msg;
