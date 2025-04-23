@@ -52,7 +52,6 @@ static safety_config perodua_init(uint16_t param) {
   };
 
   safety_config ret = BUILD_SAFETY_CFG(perodua_rx_checks, PERODUA_TX_MSGS);
-  ret.disable_forwarding = false;
   return ret;
 }
 
