@@ -18,8 +18,8 @@ static bool perodua_tx_hook(const CANPacket_t *to_send) {
   int addr = GET_ADDR(to_send);
   //return false;
 
-  // STEERING_LKAS 
-  if (addr == 0x1D0) {
+  // STEERING_LKAS, ACC_BRAKE, ACC_CMD_HUD
+  if (addr == 0x1D0 || addr == 0x271 || addr == 0x273) {
     return true;
   }
 
@@ -30,8 +30,8 @@ static bool perodua_fwd_hook(int bus_num, int addr) {
   bool block_msg = false;
 
   if (bus_num == 2) {
-    // 0x1D0 is STEERING_LKAS
-    block_msg = ((addr == 0x1D0));
+    // 0x1D0 is STEERING_LKAS, 0x271 is ACC_BRAKE, 0x273 is ACC_CMD_HUD
+    block_msg = ((addr == 0x1D0) || (addr == 0x271) || (addr == 0x273));
   }
 
   return block_msg;
@@ -50,7 +50,8 @@ static safety_config perodua_init(uint16_t param) {
 
   static const CanMsg PERODUA_TX_MSGS[] = {
     {0x1D0, 0, 8, false},  // STEERING_LKAS
-    //{0x271, 0, 8, false},  // ACC_BRAKE
+    {0x271, 0, 8, false},  // ACC_BRAKE
+    {0x273, 0, 8, false},  // ACC_CMD_HUD
   };
 
   safety_config ret = BUILD_SAFETY_CFG(perodua_rx_checks, PERODUA_TX_MSGS);
