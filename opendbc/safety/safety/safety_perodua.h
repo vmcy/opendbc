@@ -48,7 +48,8 @@ static safety_config perodua_init(uint16_t param) {
   };
 
   static const CanMsg PERODUA_TX_MSGS[] = {
-    {0x1D0, 0, 8, false},  // STEERING_LKAS
+    //{0x1D0, 0, 8, false},  // STEERING_LKAS
+    {0x271, 0, 8, false},  // ACC_BRAKE
   };
 
   safety_config ret = BUILD_SAFETY_CFG(perodua_rx_checks, PERODUA_TX_MSGS);
