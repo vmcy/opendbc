@@ -17,7 +17,7 @@ static void perodua_rx_hook(const CANPacket_t *to_push) {
 static bool perodua_tx_hook(const CANPacket_t *to_send) {
   int addr = GET_ADDR(to_send);
 
-  // LKAS command ID 
+  // STEERING_LKAS 
   if (addr == 0x1D0) {
     return true;
   }
@@ -26,15 +26,14 @@ static bool perodua_tx_hook(const CANPacket_t *to_send) {
 }
 
 static bool perodua_fwd_hook(int bus_num, int addr) {
-  bool allow_msg = false;
+  bool block_msg = false;
 
   if (bus_num == 2) {
-    // 0x273 is ACC_CMD_HUD, 0x274 is LKAS_HUD, 0x271 is ACC_BRAKE
-    allow_msg = ((addr == 0x273) || (addr == 0x274) || (addr == 0x1D0) || (addr == 0x271));
+    // 0x1D0 is STEERING_LKAS
+    block_msg = ((addr == 0x1D0));
   }
 
-  // Allow messages from bus 2 to be forwarded to bus 0
-  return allow_msg;
+  return block_msg;
 }
 
 // === INIT ===
@@ -45,18 +44,11 @@ static safety_config perodua_init(uint16_t param) {
   static RxCheck perodua_rx_checks[] = {
     {.msg = {{0x1A0, 0, 8, .ignore_checksum = true, .ignore_counter = true, .frequency = 56U}, { 0 }, { 0 }}},  // WHEEL_SPEED
     {.msg = {{0x208, 0, 6, .ignore_checksum = true, .ignore_counter = true, .frequency = 31U}, { 0 }, { 0 }}},  // PCM_BUTTONS
-    {.msg = {{0x273, 0, 8, .ignore_checksum = true, .ignore_counter = true, .frequency = 20U}, { 0 }, { 0 }}},  // ACC_CMD_HUD
+    {.msg = {{0x273, 2, 8, .ignore_checksum = true, .ignore_counter = true, .frequency = 20U}, { 0 }, { 0 }}},  // ACC_CMD_HUD
   };
-
-  // Wheel Speed CLEAN
-  /*
-  static RxCheck perodua_rx_checks[] = {
-    {.msg = {{0x260, 0, 8, .ignore_checksum = true, .ignore_counter = true, .frequency = 21U}, { 0 }, { 0 }}},
-  };
-  */
 
   static const CanMsg PERODUA_TX_MSGS[] = {
-    {0x1D0, 0, 5, false},  // steering cmd addr
+    {0x1D0, 0, 5, false},  // STEERING_LKAS
   };
 
   safety_config ret = BUILD_SAFETY_CFG(perodua_rx_checks, PERODUA_TX_MSGS);
