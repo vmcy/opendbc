@@ -25,6 +25,7 @@ static bool perodua_tx_hook(const CANPacket_t *to_send) {
   return false;
 }
 
+/*
 static bool perodua_fwd_hook(int bus_num, int addr) {
   bool block_msg = false;
 
@@ -34,7 +35,7 @@ static bool perodua_fwd_hook(int bus_num, int addr) {
   }
 
   return block_msg;
-}
+}*/
 
 // === INIT ===
 // No checks yet, just register hooks to satisfy Panda
