@@ -61,5 +61,5 @@ const safety_hooks perodua_hooks = {
   .init = perodua_init,
   .rx = perodua_rx_hook,
   .tx = perodua_tx_hook,
-  .fwd = perodua_fwd_hook,
+  //.fwd = perodua_fwd_hook,
 };
