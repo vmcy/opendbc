@@ -16,7 +16,7 @@ static void perodua_rx_hook(const CANPacket_t *to_push) {
 // Only allow LKAS steering command through
 static bool perodua_tx_hook(const CANPacket_t *to_send) {
   int addr = GET_ADDR(to_send);
-  return false;
+  //return false;
 
   // STEERING_LKAS 
   if (addr == 0x1D0) {
@@ -26,7 +26,6 @@ static bool perodua_tx_hook(const CANPacket_t *to_send) {
   return false;
 }
 
-/*
 static bool perodua_fwd_hook(int bus_num, int addr) {
   bool block_msg = false;
 
@@ -36,7 +35,7 @@ static bool perodua_fwd_hook(int bus_num, int addr) {
   }
 
   return block_msg;
-}*/
+}
 
 // === INIT ===
 // No checks yet, just register hooks to satisfy Panda
@@ -50,8 +49,8 @@ static safety_config perodua_init(uint16_t param) {
   };
 
   static const CanMsg PERODUA_TX_MSGS[] = {
-    //{0x1D0, 0, 8, false},  // STEERING_LKAS
-    {0x271, 0, 8, false},  // ACC_BRAKE
+    {0x1D0, 0, 8, false},  // STEERING_LKAS
+    //{0x271, 0, 8, false},  // ACC_BRAKE
   };
 
   safety_config ret = BUILD_SAFETY_CFG(perodua_rx_checks, PERODUA_TX_MSGS);
@@ -63,5 +62,5 @@ const safety_hooks perodua_hooks = {
   .init = perodua_init,
   .rx = perodua_rx_hook,
   .tx = perodua_tx_hook,
-  //.fwd = perodua_fwd_hook,
+  .fwd = perodua_fwd_hook,
 };
