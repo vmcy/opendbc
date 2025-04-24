@@ -20,7 +20,8 @@ static bool perodua_tx_hook(const CANPacket_t *to_send) {
 
   // STEERING_LKAS, ACC_BRAKE, ACC_CMD_HUD
   // TO ADD: 0x274 LKAS_HUD
-  if (addr == 0x1D0 || addr == 0x271) {
+  //if (addr == 0x1D0 || addr == 0x271) {
+    if (addr == 0x1D0) {
     return true;
   }
 
@@ -32,7 +33,8 @@ static bool perodua_fwd_hook(int bus_num, int addr) {
 
   if (bus_num == 2) {
     // 0x1D0 is STEERING_LKAS, 0x271 is ACC_BRAKE
-    block_msg = ((addr == 0x1D0) || (addr == 0x271));
+    //block_msg = ((addr == 0x1D0) || (addr == 0x271));
+    block_msg = ((addr == 0x1D0));
   }
 
   return block_msg;
