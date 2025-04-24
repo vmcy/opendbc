@@ -20,7 +20,7 @@ static bool perodua_tx_hook(const CANPacket_t *to_send) {
 
   // STEERING_LKAS, ACC_BRAKE, ACC_CMD_HUD
   // TO ADD: 0x274 LKAS_HUD
-  if (addr == 0x1D0 || addr == 0x271 || addr == 0x273) {
+  if (addr == 0x1D0 || addr == 0x271) {
     return true;
   }
 
@@ -54,7 +54,7 @@ static safety_config perodua_init(uint16_t param) {
   static const CanMsg PERODUA_TX_MSGS[] = {
     {0x1D0, 0, 8, false},  // STEERING_LKAS
     {0x271, 0, 8, false},  // ACC_BRAKE
-    {0x273, 0, 8, false},  // ACC_CMD_HUD
+    //{0x273, 0, 8, false},  // ACC_CMD_HUD
   };
 
   safety_config ret = BUILD_SAFETY_CFG(perodua_rx_checks, PERODUA_TX_MSGS);
