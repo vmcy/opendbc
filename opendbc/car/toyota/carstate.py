@@ -319,13 +319,13 @@ class CarState(CarStateBase):
     pt_messages.append(("PCM_BUTTONS", 0))
     pt_messages.append(("PCM_BUTTONS_HYBRID", 0))
     pt_messages.append(("LKAS_HUD", 0))
-    pt_messages.append(("ACC_CMD_HUD", 0))
+    #pt_messages.append(("ACC_CMD_HUD", 0))
     pt_messages.append(("STEERING_LKAS", 0))
     pt_messages.append(("GAS_PEDAL_2", 0))
     pt_messages.append(("BUTTONS", 0))
     pt_messages.append(("ACC_BRAKE", 0))
 
-    cam_messages = []
+    cam_messages = [("ACC_CMD_HUD", 0)]
 
     return {
       Bus.pt: CANParser(DBC[CP.carFingerprint][Bus.pt], pt_messages, 0),
