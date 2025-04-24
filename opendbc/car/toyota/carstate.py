@@ -325,7 +325,8 @@ class CarState(CarStateBase):
     pt_messages.append(("BUTTONS", 0))
     pt_messages.append(("ACC_BRAKE", 0))
 
-    cam_messages = [("ACC_CMD_HUD", 0)]
+    #cam_messages = [("ACC_CMD_HUD", 0)]
+    cam_messages = []
 
     return {
       Bus.pt: CANParser(DBC[CP.carFingerprint][Bus.pt], pt_messages, 0),
