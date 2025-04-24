@@ -32,7 +32,7 @@ static bool perodua_fwd_hook(int bus_num, int addr) {
 
   if (bus_num == 2) {
     // 0x1D0 is STEERING_LKAS, 0x271 is ACC_BRAKE
-    block_msg = ((addr == 0x1D0) || (addr == 0x271) || (addr == 0x273));
+    block_msg = ((addr == 0x1D0) || (addr == 0x271));
   }
 
   return block_msg;
