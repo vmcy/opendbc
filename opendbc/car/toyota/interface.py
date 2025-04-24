@@ -77,6 +77,8 @@ class CarInterface(CarInterfaceBase):
     #self.cp.update_strings(can_strings)
     for cp in self.can_parsers.values():
       if cp is not None:
+        print(f"cp: {cp}")
+        print(f"can_strings: {can_strings}")
         cp.update_strings(can_strings)
 
     #ret = self.CS.update(self.can_parsers)
