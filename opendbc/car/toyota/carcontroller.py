@@ -262,6 +262,6 @@ class CarController(CarControllerBase):
     #new_actuators.torqueOutputCan = apply_steer
     #new_actuators.brake = apply_brake  # if you're computing it
     #new_actuators.gas = apply_gas      # if you're computing it
-    #self.frame += 1
+    self.frame += 1
 
     return new_actuators, can_sends
