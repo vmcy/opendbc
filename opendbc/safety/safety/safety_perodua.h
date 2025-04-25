@@ -52,11 +52,10 @@ static safety_config perodua_init(uint16_t param) {
   };
 
   // TO ADD: 0x274 LKAS_HUD
-  // TODO: change ACC_CMD_HUD to bus 2
   static const CanMsg PERODUA_TX_MSGS[] = {
     {0x1D0, 0, 8, false},  // STEERING_LKAS
-    {0x271, 0, 8, false},  // ACC_BRAKE
-    {0x273, 0, 8, false},  // ACC_CMD_HUD
+    //{0x271, 0, 8, false},  // ACC_BRAKE
+    //{0x273, 0, 8, false},  // ACC_CMD_HUD
   };
 
   safety_config ret = BUILD_SAFETY_CFG(perodua_rx_checks, PERODUA_TX_MSGS);
