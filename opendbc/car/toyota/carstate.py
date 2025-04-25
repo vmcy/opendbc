@@ -23,6 +23,8 @@ HUD_MULTIPLIER = 1.04
 ButtonType = structs.CarState.ButtonEvent.Type
 SteerControlType = structs.CarParams.SteerControlType
 
+prev_val = None
+
 # These steering fault definitions seem to be common across LKA (torque) and LTA (angle):
 # - high steer rate fault: goes to 21 or 25 for 1 frame, then 9 for 2 seconds
 # - lka/lta msg drop out: goes to 9 then 11 for a combined total of 2 seconds, then 3.
@@ -176,6 +178,12 @@ class CarState(CarStateBase):
     distance_val = int(cp.vl["ACC_CMD_HUD"]['FOLLOW_DISTANCE'])
     print(f"FOLLOW_DISTANCE: {int(cp.vl["ACC_CMD_HUD"]['FOLLOW_DISTANCE'])}")
     ret.cruiseState.setDistance = self.parse_set_distance(self.set_distance_values.get(distance_val, None))
+
+    print(f"ACC_CMD_HUD: {cp.vl['ACC_CMD_HUD']}")
+    cur_val = bool(cp.vl["ACC_CMD_HUD"]["SET_ME_1_2"])
+    if cur_val != prev_val:
+        print(f"SET_ME_1_2 changed: {cur_val}")
+        prev_val = cur_val
 
     # set speed logic
     # todo: check if the logic needs to be this complicated
