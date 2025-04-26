@@ -90,6 +90,8 @@ class CarState(CarStateBase):
     self.stock_acc_set_speed = 0
 
   def update(self, can_parsers) -> structs.CarState:
+    global prev_val
+    
     cp = can_parsers[Bus.pt]
 
     ret = structs.CarState()
