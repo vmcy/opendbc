@@ -27,25 +27,15 @@ class BrakingStatus():
   PUMP_RESET = 2
 
 def apply_perodua_steer_torque_limits(apply_torque, apply_torque_last, driver_torque, blinkerOn, LIMITS):
-  MAX_TORQUE = 500
-  BASE_DRIVER_TORQUE_ALLOWANCE = 150  # Allow driver some room before clipping starts
-
-  # dynamic limit: more relaxed
-  reduced_torque_mult = 3.0 if blinkerOn else 1.0
-  driver_allowance = BASE_DRIVER_TORQUE_ALLOWANCE + abs(driver_torque) * reduced_torque_mult
-
-  max_steer_allowed = clip(driver_allowance, 0, MAX_TORQUE)
-  min_steer_allowed = clip(-driver_allowance, -MAX_TORQUE, 0)
-  apply_torque = clip(apply_torque, min_steer_allowed, max_steer_allowed)
+  MAX_TORQUE = 255
 
   # limits due to driver torque and lane change
-  # ORIGINAL
-  #reduced_torque_mult = 10 if blinkerOn else 1.5
-  #driver_max_torque = MAX_TORQUE + driver_torque * reduced_torque_mult
-  #driver_min_torque = -MAX_TORQUE - driver_torque * reduced_torque_mult
-  #max_steer_allowed = clip(driver_max_torque, 0, MAX_TORQUE)
-  #min_steer_allowed = clip(driver_min_torque, -MAX_TORQUE, 0)
-  #apply_torque = clip(apply_torque, min_steer_allowed, max_steer_allowed)
+  reduced_torque_mult = 10 if blinkerOn else 1.5
+  driver_max_torque = MAX_TORQUE + driver_torque * reduced_torque_mult
+  driver_min_torque = -MAX_TORQUE - driver_torque * reduced_torque_mult
+  max_steer_allowed = clip(driver_max_torque, 0, MAX_TORQUE)
+  min_steer_allowed = clip(driver_min_torque, -MAX_TORQUE, 0)
+  apply_torque = clip(apply_torque, min_steer_allowed, max_steer_allowed)
 
   # slow rate if steer torque increases in magnitude
   if apply_torque_last > 0:
