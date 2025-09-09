@@ -129,9 +129,9 @@ class CarState(CarStateBase):
     # todo: let gas pressed legit
     ret.gasPressed = not bool(cp.vl["GAS_PEDAL_2"]['GAS_PEDAL_STEP'])
 
-    self.acttrGas = (cp.vl["GAS_SENSOR"]['INTERCEPTOR_GAS']) # KommuActuator gas, read when stock pedal is being intercepted
-    if self.acttrGas < 0:
-      self.acttrGas = 0
+    # self.acttrGas = (cp.vl["GAS_SENSOR"]['INTERCEPTOR_GAS']) # KommuActuator gas, read when stock pedal is being intercepted
+    # if self.acttrGas < 0:
+    #   self.acttrGas = 0
 
     # brake pedal
     ret.brake = cp.vl["BRAKE"]['BRAKE_PRESSURE']
