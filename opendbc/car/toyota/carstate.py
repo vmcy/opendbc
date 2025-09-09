@@ -351,6 +351,8 @@ class CarState(CarStateBase):
       ("BUTTONS", 50),
     ]
 
+    pt_messages.append(("PCM_BUTTONS_HYBRID", 30))
+
     #cam_messages = [("ACC_CMD_HUD", 0)]
     #cam_messages = []
     cam_messages = [
