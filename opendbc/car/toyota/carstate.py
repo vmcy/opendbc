@@ -129,9 +129,9 @@ class CarState(CarStateBase):
     # todo: let gas pressed legit
     ret.gasPressed = not bool(cp.vl["GAS_PEDAL_2"]['GAS_PEDAL_STEP'])
 
-    # self.acttrGas = (cp.vl["GAS_SENSOR"]['INTERCEPTOR_GAS']) # KommuActuator gas, read when stock pedal is being intercepted
-    # if self.acttrGas < 0:
-    #   self.acttrGas = 0
+    self.acttrGas = (cp.vl["GAS_SENSOR"]['INTERCEPTOR_GAS']) # KommuActuator gas, read when stock pedal is being intercepted
+    if self.acttrGas < 0:
+      self.acttrGas = 0
 
     # brake pedal
     ret.brake = cp.vl["BRAKE"]['BRAKE_PRESSURE']
@@ -330,10 +330,10 @@ class CarState(CarStateBase):
     pt_messages.append(("PCM_BUTTONS_HYBRID", 0))
     pt_messages.append(("GAS_PEDAL_2", 0))
     pt_messages.append(("BUTTONS", 0))
-    #pt_messages.append(("LKAS_HUD", 0))
-    #pt_messages.append(("ACC_CMD_HUD", 0))
-    #pt_messages.append(("STEERING_LKAS", 0))
-    #pt_messages.append(("ACC_BRAKE", 0))
+    pt_messages.append(("LKAS_HUD", 0))
+    pt_messages.append(("ACC_CMD_HUD", 0))
+    pt_messages.append(("STEERING_LKAS", 0))
+    pt_messages.append(("ACC_BRAKE", 0))
     
     # pt_messages = [
     #   # sig_name, sig_address, default
@@ -353,15 +353,15 @@ class CarState(CarStateBase):
 
     # pt_messages.append(("PCM_BUTTONS_HYBRID", 30))
 
-    #cam_messages = [("ACC_CMD_HUD", 0)]
+    cam_messages = [("ACC_CMD_HUD", 0)]
     #cam_messages = []
-    cam_messages = [
-      # sig_name, sig_address, default
-      ("LKAS_HUD", 0),
-      ("ACC_CMD_HUD", 0),
-      ("STEERING_LKAS", 0),
-      ("ACC_BRAKE", 0)
-    ]
+    # cam_messages = [
+    #   # sig_name, sig_address, default
+    #   ("LKAS_HUD", 0),
+    #   ("ACC_CMD_HUD", 0),
+    #   ("STEERING_LKAS", 0),
+    #   ("ACC_BRAKE", 0)
+    # ]
 
     return {
       Bus.pt: CANParser(DBC[CP.carFingerprint][Bus.pt], pt_messages, 0),
