@@ -324,10 +324,10 @@ class CarState(CarStateBase):
     pt_messages.append(("PCM_BUTTONS_HYBRID", 0))
     pt_messages.append(("GAS_PEDAL_2", 0))
     pt_messages.append(("BUTTONS", 0))
-    pt_messages.append(("LKAS_HUD", 0))
-    pt_messages.append(("ACC_CMD_HUD", 0))
-    pt_messages.append(("STEERING_LKAS", 0))
-    pt_messages.append(("ACC_BRAKE", 0))
+    pt_messages.append(("LKAS_HUD", 20))
+    pt_messages.append(("ACC_CMD_HUD", 20))
+    pt_messages.append(("STEERING_LKAS", 40))
+    pt_messages.append(("ACC_BRAKE", 20))
     
     # pt_messages = [
     #   # sig_name, sig_address, default
@@ -351,10 +351,10 @@ class CarState(CarStateBase):
     #cam_messages = []
     cam_messages = [
       # sig_name, sig_address, default
-      ("LKAS_HUD", 0),
-      ("ACC_CMD_HUD", 0),
-      ("STEERING_LKAS", 0),
-      ("ACC_BRAKE", 0)
+      ("LKAS_HUD", 20),
+      ("ACC_CMD_HUD", 20),
+      ("STEERING_LKAS", 40),
+      ("ACC_BRAKE", 20)
     ]
 
     return {
