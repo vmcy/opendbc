@@ -21,13 +21,19 @@ static void perodua_rx_hook(const CANPacket_t *to_push) {
 // === TX HOOK ===
 // Only allow LKAS steering command through
 static bool perodua_tx_hook(const CANPacket_t *to_send) {
-  bool tx = true;
-  int addr = GET_ADDR(to_send);
-  int len = GET_LEN(to_send);
-  UNUSED(addr);
-  UNUSED(len);
+  // bool tx = true;
+  // int addr = GET_ADDR(to_send);
+  // int len = GET_LEN(to_send);
+  // UNUSED(addr);
+  // UNUSED(len);
 
-  return tx;
+  // return tx;
+
+  int addr = GET_ADDR(to_send);
+  if (addr == 0x1D0) {
+    return true;
+  }
+  return false;
 }
 
 static bool perodua_fwd_hook(int bus_num, int addr) {
