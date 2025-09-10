@@ -34,9 +34,10 @@ static bool perodua_fwd_hook(int bus_num, int addr) {
   bool block_msg = false;
 
   if (bus_num == 2) {
-    bool is_lkas_msg = ((addr == 464) || (addr == 628));
-    bool is_acc_msg = ((addr == 625) || (addr == 627));
-    block_msg = is_lkas_msg || is_acc_msg;
+    // bool is_lkas_msg = ((addr == 464) || (addr == 628));
+    // bool is_acc_msg = ((addr == 625) || (addr == 627));
+    // block_msg = is_lkas_msg || is_acc_msg;
+    block_msg = ((addr == 464));
   }
 
   return block_msg;
