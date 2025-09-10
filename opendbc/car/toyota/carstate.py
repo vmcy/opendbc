@@ -178,14 +178,8 @@ class CarState(CarStateBase):
     #ret.cruiseState.available = bool(cp.vl["ACC_CMD_HUD"]["SET_ME_1_2"])
     ret.cruiseState.available = bool(cp.vl["PCM_BUTTONS"]["ACC_RDY"])
     distance_val = int(cp.vl["ACC_CMD_HUD"]['FOLLOW_DISTANCE'])
-    print(f"FOLLOW_DISTANCE: {int(cp.vl["ACC_CMD_HUD"]['FOLLOW_DISTANCE'])}")
+    #print(f"FOLLOW_DISTANCE: {int(cp.vl["ACC_CMD_HUD"]['FOLLOW_DISTANCE'])}")
     ret.cruiseState.setDistance = self.parse_set_distance(self.set_distance_values.get(distance_val, None))
-
-    print(f"ACC_CMD_HUD: {cp.vl['ACC_CMD_HUD']}")
-    cur_val = bool(cp.vl["ACC_CMD_HUD"]["SET_ME_1_2"])
-    if cur_val != prev_val:
-        print(f"SET_ME_1_2 changed: {cur_val}")
-        prev_val = cur_val
 
     # set speed logic
     # todo: check if the logic needs to be this complicated
