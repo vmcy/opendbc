@@ -8,7 +8,7 @@ static void perodua_rx_hook(const CANPacket_t *to_push) {
   UNUSED(to_push);
 
   //int addr = GET_ADDR(to_push);
-
+  vehicle_moving = true;
   controls_allowed = true;
 }
 
