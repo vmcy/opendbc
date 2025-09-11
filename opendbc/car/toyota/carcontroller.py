@@ -199,63 +199,63 @@ class CarController(CarControllerBase):
         can_sends.append(create_can_steer_command(self.packer, apply_steer, steer_req, (self.frame/2) % 16))
 
       # CAN controlled longitudinal
-      if (self.frame % 5) == 0 and CS.CP.openpilotLongitudinalControl:
+      #if (self.frame % 5) == 0 and CS.CP.openpilotLongitudinalControl:
 
-        # check if need to revert to stock acc
-        if enabled and CS.out.vEgo > 10: # 36kmh
-          if CS.stock_acc_engaged and self.force_use_stock_acc:
-            self.using_stock_acc = True
-        else:
-          if enabled:
-            # spam engage until stock ACC engages
-            can_sends.append(perodua_buttons(self.packer, 0, 1, (self.frame/5) % 16))
+      # check if need to revert to stock acc
+      if enabled and CS.out.vEgo > 10: # 36kmh
+        if CS.stock_acc_engaged and self.force_use_stock_acc:
+          self.using_stock_acc = True
+      else:
+        if enabled:
+          # spam engage until stock ACC engages
+          can_sends.append(perodua_buttons(self.packer, 0, 1, (self.frame/5) % 16))
 
-        # check if need to revert to bukapilot acc
-        if CS.out.vEgo < 8.3: # 30kmh
-          self.using_stock_acc = False
+      # check if need to revert to bukapilot acc
+      if CS.out.vEgo < 8.3: # 30kmh
+        self.using_stock_acc = False
 
-        # set stock acc follow speed
-        if enabled and self.using_stock_acc:
-          if CS.out.cruiseState.speedCluster - (CS.stock_acc_set_speed // 3.6) > 0.3:
-            can_sends.append(perodua_buttons(self.packer, 0, 1, (self.frame/5) % 16))
-          if (CS.stock_acc_set_speed // 3.6) - CS.out.cruiseState.speedCluster > 0.3:
-            can_sends.append(perodua_buttons(self.packer, 1, 0, (self.frame/5) % 16))
+      # set stock acc follow speed
+      if enabled and self.using_stock_acc:
+        if CS.out.cruiseState.speedCluster - (CS.stock_acc_set_speed // 3.6) > 0.3:
+          can_sends.append(perodua_buttons(self.packer, 0, 1, (self.frame/5) % 16))
+        if (CS.stock_acc_set_speed // 3.6) - CS.out.cruiseState.speedCluster > 0.3:
+          can_sends.append(perodua_buttons(self.packer, 1, 0, (self.frame/5) % 16))
 
-        # standstill logic
-        if enabled and apply_brake > 0 and CS.out.standstill and CS.CP.carFingerprint not in SNG_CAR:
-          if self.standstill_status == BrakingStatus.STANDSTILL_INIT:
-            self.min_standstill_accel = apply_brake + 0.2
-          apply_brake, self.standstill_status, self.prev_ts = standstill_brake(self.min_standstill_accel, self.prev_ts, ts, self.standstill_status)
-        else:
-          self.standstill_status = BrakingStatus.STANDSTILL_INIT
-          self.prev_ts = ts
+      # standstill logic
+      if enabled and apply_brake > 0 and CS.out.standstill and CS.CP.carFingerprint not in SNG_CAR:
+        if self.standstill_status == BrakingStatus.STANDSTILL_INIT:
+          self.min_standstill_accel = apply_brake + 0.2
+        apply_brake, self.standstill_status, self.prev_ts = standstill_brake(self.min_standstill_accel, self.prev_ts, ts, self.standstill_status)
+      else:
+        self.standstill_status = BrakingStatus.STANDSTILL_INIT
+        self.prev_ts = ts
 
-        # PSD brake logic
-        pump, brake_req, self.last_pump = psd_brake(apply_brake, self.last_pump)
+      # PSD brake logic
+      pump, brake_req, self.last_pump = psd_brake(apply_brake, self.last_pump)
 
-        # the accel is too high at lower speed below 5kmh
-        boost = interp(CS.out.vEgo, [0.2, 0.5], [0., 1.0])
+      # the accel is too high at lower speed below 5kmh
+      boost = interp(CS.out.vEgo, [0.2, 0.5], [0., 1.0])
 
-        #if CS.CP.carFingerprint == CAR.ATIVA:
-          #boost = interp(CS.out.vEgo, [0.2, 0.5, 18., 23], [0., 1.0, 1.0, 1.0])
+      #if CS.CP.carFingerprint == CAR.ATIVA:
+        #boost = interp(CS.out.vEgo, [0.2, 0.5, 18., 23], [0., 1.0, 1.0, 1.0])
 
-        des_speed = actuators.speed + min((actuators.accel * boost), 1.0)
+      des_speed = actuators.speed + min((actuators.accel * boost), 1.0)
 
-        if self.using_stock_acc:
-          combined_cmd = (CS.stock_acc_cmd / 3.6 + des_speed)/2 if CS.stock_acc_cmd > 0 else des_speed
-          des_speed = min(combined_cmd, des_speed)
-          can_sends.append(perodua_create_accel_command(self.packer, CS.out.cruiseState.speedCluster,
-                                                        CS.out.cruiseState.available, enabled, lead_visible,
-                                                        des_speed, apply_brake, pump, CS.out.cruiseState.setDistance))
-        else:
-          can_sends.append(perodua_create_accel_command(self.packer, CS.out.cruiseState.speedCluster,
-                                                        CS.out.cruiseState.available, enabled, lead_visible,
-                                                        des_speed, apply_brake, pump, CS.out.cruiseState.setDistance))
+      if self.using_stock_acc:
+        combined_cmd = (CS.stock_acc_cmd / 3.6 + des_speed)/2 if CS.stock_acc_cmd > 0 else des_speed
+        des_speed = min(combined_cmd, des_speed)
+        can_sends.append(perodua_create_accel_command(self.packer, CS.out.cruiseState.speedCluster,
+                                                      CS.out.cruiseState.available, enabled, lead_visible,
+                                                      des_speed, apply_brake, pump, CS.out.cruiseState.setDistance))
+      else:
+        can_sends.append(perodua_create_accel_command(self.packer, CS.out.cruiseState.speedCluster,
+                                                      CS.out.cruiseState.available, enabled, lead_visible,
+                                                      des_speed, apply_brake, pump, CS.out.cruiseState.setDistance))
 
-        # Let stock AEB kick in only when system not engaged
-        aeb = not enabled and CS.out.stockAdas.aebV
-        can_sends.append(perodua_create_brake_command(self.packer, enabled, brake_req, pump, apply_brake, aeb, (self.frame/5) % 8))
-        can_sends.append(perodua_create_hud(self.packer, CS.out.cruiseState.available and CS.lkas_latch, enabled, llane_visible, rlane_visible, self.stockLdw, CS.out.stockFcw, CS.out.stockAeb, CS.out.stockAdas.frontDepartureHUD, CS.stock_lkc_off, CS.stock_fcw_off))
+      # Let stock AEB kick in only when system not engaged
+      aeb = not enabled and CS.out.stockAdas.aebV
+      can_sends.append(perodua_create_brake_command(self.packer, enabled, brake_req, pump, apply_brake, aeb, (self.frame/5) % 8))
+      can_sends.append(perodua_create_hud(self.packer, CS.out.cruiseState.available and CS.lkas_latch, enabled, llane_visible, rlane_visible, self.stockLdw, CS.out.stockFcw, CS.out.stockAeb, CS.out.stockAdas.frontDepartureHUD, CS.stock_lkc_off, CS.stock_fcw_off))
 
     self.last_steer = apply_steer
     new_actuators = actuators.as_builder()
