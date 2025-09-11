@@ -151,9 +151,9 @@ def perodua_create_accel_command(packer, set_speed, acc_rdy, enabled, is_lead, d
     "ACC_CMD": des_speed * CV.MS_TO_KPH if enabled else 0,
   }
 
-  _, dat, _ = packer.make_can_msg("ACC_CMD_HUD", 0, values)
-  crc = (perodua_checksum(0x273, dat[:-1]))
-  values["CHECKSUM"] = crc
+  # _, dat, _ = packer.make_can_msg("ACC_CMD_HUD", 0, values)
+  # crc = (perodua_checksum(0x273, dat[:-1]))
+  # values["CHECKSUM"] = crc
 
   return packer.make_can_msg("ACC_CMD_HUD", 0, values)
 
