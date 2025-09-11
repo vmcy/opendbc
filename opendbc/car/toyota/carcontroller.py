@@ -21,6 +21,8 @@ PUMP_VALS = [0, .1, .2, .3, .4, .5, .6, .7, .8, .9, 1.0]
 PUMP_RESET_INTERVAL = 1.5
 PUMP_RESET_DURATION = 0.1
 
+BRAKE_M = 1.2
+
 class BrakingStatus():
   STANDSTILL_INIT = 0
   BRAKE_HOLD = 1
@@ -163,16 +165,23 @@ class CarController(CarControllerBase):
     k = 0.3 + 0.06 * CS.out.vEgo
     des_speed = CS.out.vEgo + actuators.accel * k
 
-    apply_gas, apply_brake = compute_gb(actuators.accel)
-    apply_brake *= self.brake_scale
-    apply_brake = clip(apply_brake, 0., 1.56)
+    apply_brake = 0 if (CS.out.gasPressed or actuators.accel >= 0) else clip(abs(actuators.accel / BRAKE_M), 0., 1.25)
+    apply_brake = apply_brake * 0.8
 
-    if self.using_stock_acc:
-      apply_brake = max(CS.stock_brake_mag * 0.85, apply_brake) # Todo: should try min, it was smooth but brake may fail
+    # reduce max brake when below 10kmh to reduce jerk. TODO: more elegant way to do this?
+    if CS.out.vEgo < 2.8:
+      apply_brake = clip(apply_brake, 0., 0.8)
 
-    if CS.out.gasPressed:
-      apply_brake = 0
-    apply_gas *= self.gas_scale
+    # apply_gas, apply_brake = compute_gb(actuators.accel)
+    # apply_brake *= self.brake_scale
+    # apply_brake = clip(apply_brake, 0., 1.56)
+
+    # if self.using_stock_acc:
+    #   apply_brake = max(CS.stock_brake_mag * 0.85, apply_brake) # Todo: should try min, it was smooth but brake may fail
+
+    # if CS.out.gasPressed:
+    #   apply_brake = 0
+    # apply_gas *= self.gas_scale
 
     '''
     Perodua vehicles supported by Kommu includes vehicles that does not have stock LKAS and ACC.
