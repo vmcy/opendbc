@@ -196,7 +196,7 @@ class CarController(CarControllerBase):
             apply_steer = -CS.out.stockAdas.ldpSteerV
 
         steer_req = (enabled or self.stockLdw) and CS.lkas_latch
-        can_sends.append(create_can_steer_command(self.packer, apply_steer, steer_req, (self.frame/2) % 16))
+        #can_sends.append(create_can_steer_command(self.packer, apply_steer, steer_req, (self.frame/2) % 16))
 
       # CAN controlled longitudinal
       if (self.frame % 5) == 0 and CS.CP.openpilotLongitudinalControl:
