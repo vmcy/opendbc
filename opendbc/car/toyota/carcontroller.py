@@ -160,6 +160,9 @@ class CarController(CarControllerBase):
       self.steer_rate_limited &= not CS.out.steeringPressed
 
     # gas, brake
+    k = 0.3 + 0.06 * CS.out.vEgo
+    des_speed = CS.out.vEgo + actuators.accel * k
+
     apply_gas, apply_brake = compute_gb(actuators.accel)
     apply_brake *= self.brake_scale
     apply_brake = clip(apply_brake, 0., 1.56)
@@ -239,11 +242,11 @@ class CarController(CarControllerBase):
         #if CS.CP.carFingerprint == CAR.ATIVA:
           #boost = interp(CS.out.vEgo, [0.2, 0.5, 18., 23], [0., 1.0, 1.0, 1.0])
 
-        des_speed = actuators.speed + min((actuators.accel * boost), 1.0)
+        #des_speed = actuators.speed + min((actuators.accel * boost), 1.0)
 
         if self.using_stock_acc:
-          combined_cmd = (CS.stock_acc_cmd / 3.6 + des_speed)/2 if CS.stock_acc_cmd > 0 else des_speed
-          des_speed = min(combined_cmd, des_speed)
+          #combined_cmd = (CS.stock_acc_cmd / 3.6 + des_speed)/2 if CS.stock_acc_cmd > 0 else des_speed
+          #des_speed = min(combined_cmd, des_speed)
           can_sends.append(perodua_create_accel_command(self.packer, CS.out.cruiseState.speedCluster,
                                                         CS.out.cruiseState.available, enabled, lead_visible,
                                                         des_speed, apply_brake, pump, CS.out.cruiseState.setDistance))
