@@ -199,7 +199,7 @@ class CarController(CarControllerBase):
         can_sends.append(create_can_steer_command(self.packer, apply_steer, steer_req, (self.frame/2) % 16))
 
       # CAN controlled longitudinal
-      if (self.frame % 5) == 0: #and CS.CP.openpilotLongitudinalControl:
+      if (self.frame % 5) == 0 and CS.CP.openpilotLongitudinalControl:
 
         # check if need to revert to stock acc
         if enabled and CS.out.vEgo > 10: # 36kmh
