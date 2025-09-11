@@ -29,14 +29,12 @@ class BrakingStatus():
   PUMP_RESET = 2
 
 def apply_perodua_steer_torque_limits(apply_torque, apply_torque_last, driver_torque, blinkerOn, LIMITS):
-  MAX_TORQUE = 255
-
   # limits due to driver torque and lane change
   reduced_torque_mult = 10 if blinkerOn else 1.5
-  driver_max_torque = MAX_TORQUE + driver_torque * reduced_torque_mult
-  driver_min_torque = -MAX_TORQUE - driver_torque * reduced_torque_mult
-  max_steer_allowed = clip(driver_max_torque, 0, MAX_TORQUE)
-  min_steer_allowed = clip(driver_min_torque, -MAX_TORQUE, 0)
+  driver_max_torque = 255 + driver_torque * reduced_torque_mult
+  driver_min_torque = -255 - driver_torque * reduced_torque_mult
+  max_steer_allowed = max(min(255, driver_max_torque), 0)
+  min_steer_allowed = min(max(-255, driver_min_torque), 0)
   apply_torque = clip(apply_torque, min_steer_allowed, max_steer_allowed)
 
   # slow rate if steer torque increases in magnitude
@@ -49,16 +47,16 @@ def apply_perodua_steer_torque_limits(apply_torque, apply_torque_last, driver_to
 
   return int(round(float(apply_torque)))
 
-def apply_acttr_steer_torque_limits(apply_torque, apply_torque_last, LIMITS):
-  # slow rate if steer torque increases in magnitude
-  if apply_torque_last > 0:
-    apply_torque = clip(apply_torque, max(apply_torque_last - LIMITS.STEER_DELTA_DOWN, -LIMITS.STEER_DELTA_UP),
-                        apply_torque_last + LIMITS.STEER_DELTA_UP)
-  else:
-    apply_torque = clip(apply_torque, apply_torque_last - LIMITS.STEER_DELTA_UP,
-                        min(apply_torque_last + LIMITS.STEER_DELTA_DOWN, LIMITS.STEER_DELTA_UP))
+# def apply_acttr_steer_torque_limits(apply_torque, apply_torque_last, LIMITS):
+#   # slow rate if steer torque increases in magnitude
+#   if apply_torque_last > 0:
+#     apply_torque = clip(apply_torque, max(apply_torque_last - LIMITS.STEER_DELTA_DOWN, -LIMITS.STEER_DELTA_UP),
+#                         apply_torque_last + LIMITS.STEER_DELTA_UP)
+#   else:
+#     apply_torque = clip(apply_torque, apply_torque_last - LIMITS.STEER_DELTA_UP,
+#                         min(apply_torque_last + LIMITS.STEER_DELTA_DOWN, LIMITS.STEER_DELTA_UP))
 
-  return int(round(float(apply_torque)))
+#   return int(round(float(apply_torque)))
 
 def compute_gb(accel):
   gb = float(accel) / 4.0
@@ -151,17 +149,17 @@ class CarController(CarControllerBase):
     # steer
     steer_max_interp = interp(CS.out.vEgo, self.CP.lateralParams.torqueBP, self.CP.lateralParams.torqueV)
     new_steer = int(round(actuators.torque * steer_max_interp))
-    apply_steer = apply_acttr_steer_torque_limits(new_steer, self.last_steer, self.params)
+    #apply_steer = apply_acttr_steer_torque_limits(new_steer, self.last_steer, self.params)
 
     if CS.CP.carFingerprint in ACC_CAR:
       isBlinkerOn = CS.out.leftBlinker != CS.out.rightBlinker
       apply_steer = apply_perodua_steer_torque_limits(new_steer, self.last_steer, CS.out.steeringTorqueEps, isBlinkerOn, self.params)
 
-    self.steer_rate_limited = (new_steer != apply_steer) and (apply_steer != 0)
-    if CS.CP.carFingerprint not in NOT_CAN_CONTROLLED:
-      self.steer_rate_limited &= not CS.out.steeringPressed
+    # self.steer_rate_limited = (new_steer != apply_steer) and (apply_steer != 0)
+    # if CS.CP.carFingerprint not in NOT_CAN_CONTROLLED:
+    #   self.steer_rate_limited &= not CS.out.steeringPressed
 
-    # gas, brake
+    # brake
     k = 0.3 + 0.06 * CS.out.vEgo
     des_speed = CS.out.vEgo + actuators.accel * k
 
@@ -172,31 +170,11 @@ class CarController(CarControllerBase):
     if CS.out.vEgo < 2.8:
       apply_brake = clip(apply_brake, 0., 0.8)
 
-    # apply_gas, apply_brake = compute_gb(actuators.accel)
-    # apply_brake *= self.brake_scale
-    # apply_brake = clip(apply_brake, 0., 1.56)
-
-    # if self.using_stock_acc:
-    #   apply_brake = max(CS.stock_brake_mag * 0.85, apply_brake) # Todo: should try min, it was smooth but brake may fail
-
-    # if CS.out.gasPressed:
-    #   apply_brake = 0
-    # apply_gas *= self.gas_scale
-
-    '''
-    Perodua vehicles supported by Kommu includes vehicles that does not have stock LKAS and ACC.
-    These vehicles are controlled by KommuActuator and is labelled as NOT_CAN_CONTROLLED.
-    KommuActuator uses 4 DACs to control the gas and steer of the vehicle. All values reflects the
-    value of 12 bit DAC.
-
-    Vehicles that comes with Perodua Smart Drive (PSD), includes stock LKAS and ACC. Note that the
-    ACC command is done by giving a set speed so the stock internal controller will obtain the speed.
-    '''
-
     if CS.CP.carFingerprint not in NOT_CAN_CONTROLLED:
       ts = self.frame * DT_CTRL
 
-      #if self.need_clear_engine or frame < 1000:
+      # always clear dtc for dnga for the first 10s
+      #if self.frame <= 1000:
         #can_sends.append(make_can_msg(2015, b'\x01\x04\x00\x00\x00\x00\x00\x00', 0))
 
       # CAN controlled lateral
@@ -245,22 +223,7 @@ class CarController(CarControllerBase):
         # PSD brake logic
         pump, brake_req, self.last_pump = psd_brake(apply_brake, self.last_pump)
 
-        # the accel is too high at lower speed below 5kmh
-        boost = interp(CS.out.vEgo, [0.2, 0.5], [0., 1.0])
-
-        #if CS.CP.carFingerprint == CAR.ATIVA:
-          #boost = interp(CS.out.vEgo, [0.2, 0.5, 18., 23], [0., 1.0, 1.0, 1.0])
-
-        #des_speed = actuators.speed + min((actuators.accel * boost), 1.0)
-
-        if self.using_stock_acc:
-          #combined_cmd = (CS.stock_acc_cmd / 3.6 + des_speed)/2 if CS.stock_acc_cmd > 0 else des_speed
-          #des_speed = min(combined_cmd, des_speed)
-          can_sends.append(perodua_create_accel_command(self.packer, CS.out.cruiseState.speedCluster,
-                                                        CS.out.cruiseState.available, enabled, lead_visible,
-                                                        des_speed, apply_brake, pump, CS.out.cruiseState.setDistance))
-        else:
-          can_sends.append(perodua_create_accel_command(self.packer, CS.out.cruiseState.speedCluster,
+        can_sends.append(perodua_create_accel_command(self.packer, CS.out.cruiseState.speedCluster,
                                                         CS.out.cruiseState.available, enabled, lead_visible,
                                                         des_speed, apply_brake, pump, CS.out.cruiseState.setDistance))
 
@@ -272,9 +235,6 @@ class CarController(CarControllerBase):
     self.last_steer = apply_steer
     new_actuators = actuators.as_builder()
     new_actuators.torque = apply_steer / steer_max_interp
-    #new_actuators.torqueOutputCan = apply_steer
-    #new_actuators.brake = apply_brake  # if you're computing it
-    #new_actuators.gas = apply_gas      # if you're computing it
     self.frame += 1
 
     return new_actuators, can_sends
