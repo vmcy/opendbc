@@ -89,8 +89,6 @@ class CarState(CarStateBase):
     self.stock_brake_mag = 0
     self.stock_acc_set_speed = 0
 
-    self.prev_distance_val = -1
-
   def update(self, can_parsers) -> structs.CarState:
     global prev_val
     
@@ -176,18 +174,9 @@ class CarState(CarStateBase):
       self.lkas_latch = not self.lkas_latch
       self.lkas_btn_rising_edge_seen = False
 
-    #print(f"SET_ME_1_2: {bool(cp.vl["ACC_CMD_HUD"]["SET_ME_1_2"])}")
     #ret.cruiseState.available = bool(cp.vl["ACC_CMD_HUD"]["SET_ME_1_2"])
     ret.cruiseState.available = bool(cp.vl["PCM_BUTTONS"]["ACC_RDY"])
     self.distance_val = int(cp.vl["ACC_CMD_HUD"]['FOLLOW_DISTANCE'])
-    self.prev_distance_val = self.distance_val
-    prev_distance_button = self.distance_button
-    self.distance_button = cp.vl["BUTTONS"]["DISTANCE_BTN"]
-    ret.buttonEvents = create_button_events(self.distance_button, prev_distance_button, {1: ButtonType.gapAdjustCruise})
-    if self.distance_button or self.prev_distance_val != self.distance_val:
-      personality = str(1 if self.distance_val == 1 else (2 - self.distance_val))
-      self.p.put("LongitudinalPersonality", personality)
-    self.prev_distance_val = self.distance_val
 
     #ret.cruiseState.setDistance = self.parse_set_distance(self.set_distance_values.get(self.distance_val, None))
 
