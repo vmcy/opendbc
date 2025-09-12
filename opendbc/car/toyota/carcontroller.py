@@ -225,7 +225,7 @@ class CarController(CarControllerBase):
 
         can_sends.append(perodua_create_accel_command(self.packer, CS.out.cruiseState.speedCluster,
                                                         CS.out.cruiseState.available, enabled, lead_visible,
-                                                        des_speed, apply_brake, pump, CS.distance_val))
+                                                        des_speed, apply_brake, pump, CS.out.cruiseState.setDistance))
 
         # Let stock AEB kick in only when system not engaged
         aeb = not enabled and CS.out.stockAdas.aebV
