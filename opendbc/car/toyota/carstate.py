@@ -150,21 +150,21 @@ class CarState(CarStateBase):
     ret.steerError = False
 
     ret.vEgoCluster = cp.vl["BUTTONS"]["UI_SPEED"] * CV.KPH_TO_MS * HUD_MULTIPLIER
-    ret.stockAdas.frontDepartureHUD = bool(cp.vl["LKAS_HUD"]["FRONT_DEPART"])
-    ret.stockAdas.laneDepartureHUD = bool(cp.vl["LKAS_HUD"]["LDA_ALERT"])
-    ret.stockAdas.ldpSteerV = cp.vl["STEERING_LKAS"]['STEER_CMD']
-    ret.stockAdas.aebV = cp.vl["ACC_BRAKE"]['AEB_1019']
+    ret.stockAdas.frontDepartureHUD = bool(cp_cam.vl["LKAS_HUD"]["FRONT_DEPART"])
+    ret.stockAdas.laneDepartureHUD = bool(cp_cam.vl["LKAS_HUD"]["LDA_ALERT"])
+    ret.stockAdas.ldpSteerV = cp_cam.vl["STEERING_LKAS"]['STEER_CMD']
+    ret.stockAdas.aebV = cp_cam.vl["ACC_BRAKE"]['AEB_1019']
 
-    ret.stockAeb = bool(cp.vl["LKAS_HUD"]['AEB_BRAKE'])
-    ret.stockFcw = bool(cp.vl["LKAS_HUD"]['AEB_ALARM'])
-    self.stock_lkc_off = bool(cp.vl["LKAS_HUD"]['LDA_OFF'])
-    self.lkas_rdy = bool(cp.vl["LKAS_HUD"]['LKAS_SET'])
-    self.stock_fcw_off = bool(cp.vl["LKAS_HUD"]['FCW_DISABLE'])
+    ret.stockAeb = bool(cp_cam.vl["LKAS_HUD"]['AEB_BRAKE'])
+    ret.stockFcw = bool(cp_cam.vl["LKAS_HUD"]['AEB_ALARM'])
+    self.stock_lkc_off = bool(cp_cam.vl["LKAS_HUD"]['LDA_OFF'])
+    self.lkas_rdy = bool(cp_cam.vl["LKAS_HUD"]['LKAS_SET'])
+    self.stock_fcw_off = bool(cp_cam.vl["LKAS_HUD"]['FCW_DISABLE'])
 
-    self.stock_acc_cmd = cp.vl["ACC_CMD_HUD"]["ACC_CMD"] # kph
+    self.stock_acc_cmd = cp_cam.vl["ACC_CMD_HUD"]["ACC_CMD"] # kph
     self.stock_acc_engaged = self.stock_acc_cmd > 0
-    self.stock_acc_set_speed = cp.vl["ACC_CMD_HUD"]["SET_SPEED"] #kph
-    self.stock_brake_mag = -1 * cp.vl["ACC_BRAKE"]["MAGNITUDE"]
+    self.stock_acc_set_speed = cp_cam.vl["ACC_CMD_HUD"]["SET_SPEED"] #kph
+    self.stock_brake_mag = -1 * cp_cam.vl["ACC_BRAKE"]["MAGNITUDE"]
 
     # logic to engage LKC
     if bool(cp.vl["BUTTONS"]['LKC_BTN']):
@@ -177,7 +177,7 @@ class CarState(CarStateBase):
 
     ret.cruiseState.available = bool(cp_cam.vl["ACC_CMD_HUD"]["SET_ME_1_2"])
     #ret.cruiseState.available = bool(cp.vl["PCM_BUTTONS"]["ACC_RDY"])
-    self.distance_val = int(cp.vl["ACC_CMD_HUD"]['FOLLOW_DISTANCE'])
+    self.distance_val = int(cp_cam.vl["ACC_CMD_HUD"]['FOLLOW_DISTANCE'])
 
     #ret.cruiseState.setDistance = self.parse_set_distance(self.set_distance_values.get(self.distance_val, None))
 
@@ -348,15 +348,15 @@ class CarState(CarStateBase):
 
     # pt_messages.append(("PCM_BUTTONS_HYBRID", 30))
 
-    cam_messages = [("ACC_CMD_HUD", 0)]
+    #cam_messages = [("ACC_CMD_HUD", 0)]
     #cam_messages = []
-    #cam_messages = [
-      # sig_name, sig_address, default
-      # ("LKAS_HUD", 20),
-      # ("ACC_CMD_HUD", 20),
-      # ("STEERING_LKAS", 40),
-      # ("ACC_BRAKE", 20)
-    #]
+    cam_messages = [
+      #sig_name, sig_address, default
+      ("LKAS_HUD", 0),
+      ("ACC_CMD_HUD", 0),
+      ("STEERING_LKAS", 0),
+      ("ACC_BRAKE", 0)
+    ]
 
     return {
       Bus.pt: CANParser(DBC[CP.carFingerprint][Bus.pt], pt_messages, 0),
