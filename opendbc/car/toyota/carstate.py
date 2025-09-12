@@ -93,6 +93,7 @@ class CarState(CarStateBase):
     global prev_val
     
     cp = can_parsers[Bus.pt]
+    cp_cam = can_parsers[Bus.cam]
 
     ret = structs.CarState()
 
@@ -174,7 +175,7 @@ class CarState(CarStateBase):
       self.lkas_latch = not self.lkas_latch
       self.lkas_btn_rising_edge_seen = False
 
-    ret.cruiseState.available = bool(cp.vl["ACC_CMD_HUD"]["SET_ME_1_2"])
+    ret.cruiseState.available = bool(cp_cam.vl["ACC_CMD_HUD"]["SET_ME_1_2"])
     #ret.cruiseState.available = bool(cp.vl["PCM_BUTTONS"]["ACC_RDY"])
     self.distance_val = int(cp.vl["ACC_CMD_HUD"]['FOLLOW_DISTANCE'])
 
