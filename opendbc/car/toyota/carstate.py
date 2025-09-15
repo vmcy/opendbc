@@ -308,43 +308,39 @@ class CarState(CarStateBase):
   @staticmethod
   def get_can_parsers(CP):
     
-    pt_messages = [
-      ("WHEEL_SPEED", 0.),
-      ("TRANSMISSION", 0),
-      ("GAS_PEDAL", 0.),
-      ("BRAKE", 0.),
-      ("GAS_SENSOR", 0),
-      ("RIGHT_STALK", 0),
-      ("METER_CLUSTER", 0),
-    ]
-
-    pt_messages.append(("BSM", 0))
-    pt_messages.append(("STEERING_MODULE", 0.))
-    pt_messages.append(("EPS_SHAFT_TORQUE", 0.))
-    pt_messages.append(("PCM_BUTTONS", 0))
-    pt_messages.append(("PCM_BUTTONS_HYBRID", 0))
-    pt_messages.append(("GAS_PEDAL_2", 0))
-    pt_messages.append(("BUTTONS", 0))
-    # pt_messages.append(("LKAS_HUD", 0))
-    # pt_messages.append(("ACC_CMD_HUD", 0))
-    # pt_messages.append(("STEERING_LKAS", 0))
-    # pt_messages.append(("ACC_BRAKE", 0))
-    
     # pt_messages = [
-    #   # sig_name, sig_address, default
-    #   ("WHEEL_SPEED", 50),
-    #   ("TRANSMISSION", 30),
-    #   ("GAS_PEDAL", 60),
-    #   ("BRAKE", 100),
-    #   ("RIGHT_STALK", 33),
+    #   ("WHEEL_SPEED", 0.),
+    #   ("TRANSMISSION", 0),
+    #   ("GAS_PEDAL", 0.),
+    #   ("BRAKE", 0.),
+    #   ("GAS_SENSOR", 0),
+    #   ("RIGHT_STALK", 0),
     #   ("METER_CLUSTER", 0),
-    #   ("BSM", 0),
-    #   ("STEERING_MODULE", 100),
-    #   ("EPS_SHAFT_TORQUE", 40),
-    #   ("PCM_BUTTONS", 30),
-    #   ("GAS_PEDAL_2", 0),
-    #   ("BUTTONS", 50),
     # ]
+
+    # pt_messages.append(("BSM", 0))
+    # pt_messages.append(("STEERING_MODULE", 0.))
+    # pt_messages.append(("EPS_SHAFT_TORQUE", 0.))
+    # pt_messages.append(("PCM_BUTTONS", 0))
+    # pt_messages.append(("PCM_BUTTONS_HYBRID", 0))
+    # pt_messages.append(("GAS_PEDAL_2", 0))
+    # pt_messages.append(("BUTTONS", 0))
+    
+    pt_messages = [
+      # sig_name, sig_address, default
+      ("WHEEL_SPEED", 50),
+      ("TRANSMISSION", 30),
+      ("GAS_PEDAL", 60),
+      ("BRAKE", 100),
+      ("RIGHT_STALK", 33),
+      ("METER_CLUSTER", 0),
+      ("BSM", 0),
+      ("STEERING_MODULE", 100),
+      ("EPS_SHAFT_TORQUE", 40),
+      ("PCM_BUTTONS", 30),
+      ("GAS_PEDAL_2", 0),
+      ("BUTTONS", 50),
+    ]
 
     # pt_messages.append(("PCM_BUTTONS_HYBRID", 30))
 
