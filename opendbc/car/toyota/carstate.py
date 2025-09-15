@@ -70,7 +70,7 @@ class CarState(CarStateBase):
     self.is_cruise_latch = False
     self.cruise_speed = 30 * CV.KPH_TO_MS
     self.cruise_speed_counter = 0
-    self.acttrGas = 0
+    #self.acttrGas = 0
 
     self.is_plus_btn_latch = False
     self.is_minus_btn_latch = False
@@ -130,9 +130,9 @@ class CarState(CarStateBase):
     # todo: let gas pressed legit
     ret.gasPressed = not bool(cp.vl["GAS_PEDAL_2"]['GAS_PEDAL_STEP'])
 
-    self.acttrGas = (cp.vl["GAS_SENSOR"]['INTERCEPTOR_GAS']) # KommuActuator gas, read when stock pedal is being intercepted
-    if self.acttrGas < 0:
-      self.acttrGas = 0
+    # self.acttrGas = (cp.vl["GAS_SENSOR"]['INTERCEPTOR_GAS']) # KommuActuator gas, read when stock pedal is being intercepted
+    # if self.acttrGas < 0:
+    #   self.acttrGas = 0
 
     # brake pedal
     ret.brake = cp.vl["BRAKE"]['BRAKE_PRESSURE']
@@ -232,7 +232,7 @@ class CarState(CarStateBase):
     self.is_plus_btn_latch = plus_button
     self.is_minus_btn_latch = minus_button
 
-    if bool(cp.vl["PCM_BUTTONS"]["CANCEL"]) or bool(cp.vl["PCM_BUTTONS_HYBRID"]["CANCEL"]) :
+    if bool(cp.vl["PCM_BUTTONS"]["CANCEL"]): #or bool(cp.vl["PCM_BUTTONS_HYBRID"]["CANCEL"]):
       self.is_cruise_latch = False
 
     if ret.brakePressed:
