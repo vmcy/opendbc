@@ -21,7 +21,7 @@ PUMP_VALS = [0, .1, .2, .3, .4, .5, .6, .7, .8, .9, 1.0]
 PUMP_RESET_INTERVAL = 1.5
 PUMP_RESET_DURATION = 0.1
 
-BRAKE_M = 1.2
+BRAKE_M = 1.4
 
 class BrakingStatus():
   STANDSTILL_INIT = 0
@@ -104,6 +104,11 @@ def psd_brake(apply_brake, last_pump):
 
   return pump, brake_req, last_pump
 
+def rate_limit_positive_speed(x, last):
+  if x > last:
+    return min(x, last + 0.006)
+  else:
+    return x
 class CarController(CarControllerBase):
   def __init__(self, dbc_names, CP):
     super().__init__(dbc_names, CP)
@@ -137,6 +142,8 @@ class CarController(CarControllerBase):
     #self.force_use_stock_acc = f.has("StockAcc")
     self.force_use_stock_acc = True
 
+    self.last_des_speed = 0
+
   #def update(self, enabled, CS, frame, actuators, lead_visible, rlane_visible, llane_visible, pcm_cancel, ldw):
   def update(self, CC, CS, now_nanos):
     actuators = CC.actuators
@@ -160,16 +167,29 @@ class CarController(CarControllerBase):
     #   self.steer_rate_limited &= not CS.out.steeringPressed
 
     # Original KA2
-    # k = 0.3 + 0.06 * CS.out.vEgo
-    # des_speed = CS.out.vEgo + actuators.accel * k
+    acc = actuators.accel
+    k = 0.3 + 0.06 * CS.out.vEgo
+    des_speed = CS.out.vEgo + acc * k
 
     # Proposed by Codex to reduce jerk
-    speed_horizon = clip(0.6 + 0.02 * CS.out.vEgo, 0.6, 1.2)  # 0.6–1.2 s look-ahead
-    des_speed = CS.out.vEgo + actuators.accel * speed_horizon
+    #speed_horizon = clip(0.6 + 0.02 * CS.out.vEgo, 0.6, 1.2)  # 0.6–1.2 s look-ahead
+    #des_speed = CS.out.vEgo + actuators.accel * speed_horizon
 
     # brake
     apply_brake = 0 if (CS.out.gasPressed or actuators.accel >= 0) else clip(abs(actuators.accel / BRAKE_M), 0., 1.25)
-    apply_brake = apply_brake * 0.8
+    if CS.out.vEgo < 1.5:
+      des_speed = CS.out.vEgo
+      apply_brake = apply_brake * 0.85
+    else:
+      apply_brake = max((CS.stock_brake_mag * 0.5) - acc if acc > 0 else CS.stock_brake_mag * 0.5, apply_brake * 0.85)
+    if apply_brake > 0:
+      self.last_des_speed = CS.out.vEgo
+    else:
+      self.last_des_speed = des_speed
+
+    # positive des_speed rate limit
+    if (CS.out.vEgo > 8.33):
+      des_speed = rate_limit_positive_speed(des_speed, self.last_des_speed)
 
     # reduce max brake when below 10kmh to reduce jerk. TODO: more elegant way to do this?
     if CS.out.vEgo < 2.8:
@@ -240,6 +260,8 @@ class CarController(CarControllerBase):
     self.last_steer = apply_steer
     new_actuators = actuators.as_builder()
     new_actuators.torque = apply_steer / steer_max_interp
+    # sometimes we let stock brake, brake takes precedence over gas
+    new_actuators.accel = actuators.accel - apply_brake if actuators.accel > 0 else actuators.accel
     self.frame += 1
 
     return new_actuators, can_sends

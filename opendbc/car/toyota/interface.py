@@ -45,26 +45,28 @@ class CarInterface(CarInterfaceBase):
       ret.wheelbase = 2.750
       ret.steerRatio = 17.00
       ret.centerToFront = ret.wheelbase * 0.44
-      tire_stiffness_factor = 0.9871
+      tire_stiffness_factor = 0.7933
       ret.mass = 1170. + STD_CARGO_KG
-      ret.wheelSpeedFactor = 1.425
 
-      ret.lateralTuning.pid.kiV, ret.lateralTuning.pid.kpV = [[0.16], [0.30]]
       ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0.], [255]]
+      ret.lateralTuning.pid.kiBP, ret.lateralTuning.pid.kpBP = [[0., 20], [0., 20]]
+      ret.lateralTuning.pid.kiV, ret.lateralTuning.pid.kpV = [[0.14, 0.18], [0.18, 0.25]]
       ret.lateralTuning.pid.kf = 0.00015
 
       ret.longitudinalTuning.kpBP = [0., 5., 20.]
-      ret.longitudinalTuning.kpV = [0.15, 0.6, 0.7]
       ret.longitudinalTuning.kiBP = [5, 7, 28]
-      ret.longitudinalTuning.kiV = [0.15, 0.26, 0.26]
-      ret.longitudinalActuatorDelayLowerBound = 0.42
-      ret.longitudinalActuatorDelayUpperBound = 0.60
+      ret.longitudinalTuning.kpV = [0.15, 0.5, 0.6]
+      ret.longitudinalTuning.kiV = [0.10, 0.15, 0.20]
+
+      ret.wheelSpeedFactor = 1.425
+      ret.longitudinalActuatorDelayLowerBound = 0.40
+      ret.longitudinalActuatorDelayUpperBound = 0.50
       ret.speedControlled = True
 
       ret.minEnableSpeed = -1
-      ret.steerActuatorDelay = 0.30           # Steering wheel actuator delay in seconds
+      #ret.steerActuatorDelay = 0.30           # Steering wheel actuator delay in seconds
       ret.enableBsm = True
-      ret.stoppingDecelRate = 0.25 # reach stopping target smoothly
+      ret.stoppingDecelRate = 0.10 # reach stopping target smoothly
 
     ret.rotationalInertia = scale_rot_inertia(ret.mass, ret.wheelbase)
     ret.tireStiffnessFront, ret.tireStiffnessRear = scale_tire_stiffness(ret.mass, ret.wheelbase, ret.centerToFront, tire_stiffness_factor=tire_stiffness_factor)
