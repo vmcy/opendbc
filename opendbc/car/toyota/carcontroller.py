@@ -159,10 +159,15 @@ class CarController(CarControllerBase):
     # if CS.CP.carFingerprint not in NOT_CAN_CONTROLLED:
     #   self.steer_rate_limited &= not CS.out.steeringPressed
 
-    # brake
-    k = 0.3 + 0.06 * CS.out.vEgo
-    des_speed = CS.out.vEgo + actuators.accel * k
+    # Original KA2
+    # k = 0.3 + 0.06 * CS.out.vEgo
+    # des_speed = CS.out.vEgo + actuators.accel * k
 
+    # Proposed by Codex to reduce jerk
+    speed_horizon = clip(0.6 + 0.02 * CS.out.vEgo, 0.6, 1.2)  # 0.6–1.2 s look-ahead
+    des_speed = CS.out.vEgo + actuators.accel * speed_horizon
+
+    # brake
     apply_brake = 0 if (CS.out.gasPressed or actuators.accel >= 0) else clip(abs(actuators.accel / BRAKE_M), 0., 1.25)
     apply_brake = apply_brake * 0.8
 

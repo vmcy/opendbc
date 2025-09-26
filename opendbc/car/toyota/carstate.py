@@ -243,7 +243,13 @@ class CarState(CarStateBase):
     #self.cruise_speed = clip(self.cruise_speed, 30 * CV.KPH_TO_MS, 125 * CV.KPH_TO_MS)
     self.cruise_speed = max(min(self.cruise_speed, 140 * CV.KPH_TO_MS), 30 * CV.KPH_TO_MS)
     ret.cruiseState.speedCluster = self.cruise_speed
-    ret.cruiseState.speed = ret.cruiseState.speedCluster / interp(ret.vEgo, [0,140], [1.0615,1.0170])
+
+    # Original KA2
+    #ret.cruiseState.speed = ret.cruiseState.speedCluster / interp(ret.vEgo, [0,140], [1.0615,1.0170])
+
+    # Proposed by Codex to reduce jerk
+    ret.cruiseState.speed = ret.cruiseState.speedCluster
+
 
     ret.cruiseState.standstill = False
     ret.cruiseState.nonAdaptive = False
