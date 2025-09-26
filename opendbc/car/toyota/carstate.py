@@ -107,9 +107,8 @@ class CarState(CarStateBase):
     )
     ret.vEgoRaw = float(mean([ret.wheelSpeeds.fl, ret.wheelSpeeds.fr, ret.wheelSpeeds.rl, ret.wheelSpeeds.rr]))
     ret.vEgo, ret.aEgo = self.update_speed_kf(ret.vEgoRaw)
-    ret.vEgoCluster = ret.vEgo * 1.015  # minimum of all the cars
 
-    ret.standstill = abs(ret.vEgoRaw) < 1e-3
+    ret.standstill = ret.vEgoRaw < 0.01
 
     # safety checks to engage
     can_gear = int(cp.vl["TRANSMISSION"]['GEAR'])
@@ -176,7 +175,6 @@ class CarState(CarStateBase):
       self.lkas_btn_rising_edge_seen = False
 
     ret.cruiseState.available = bool(cp_cam.vl["ACC_CMD_HUD"]["SET_ME_1_2"])
-    #ret.cruiseState.available = bool(cp.vl["PCM_BUTTONS"]["ACC_RDY"])
     self.distance_val = int(cp_cam.vl["ACC_CMD_HUD"]['FOLLOW_DISTANCE'])
 
     ret.cruiseState.setDistance = self.parse_set_distance(self.set_distance_values.get(self.distance_val, None))
@@ -245,11 +243,10 @@ class CarState(CarStateBase):
     ret.cruiseState.speedCluster = self.cruise_speed
 
     # Original KA2
-    #ret.cruiseState.speed = ret.cruiseState.speedCluster / interp(ret.vEgo, [0,140], [1.0615,1.0170])
+    ret.cruiseState.speed = ret.cruiseState.speedCluster / interp(ret.vEgo, [0,140], [1.0615,1.0170])
 
     # Proposed by Codex to reduce jerk
-    ret.cruiseState.speed = ret.cruiseState.speedCluster
-
+    #ret.cruiseState.speed = ret.cruiseState.speedCluster
 
     ret.cruiseState.standstill = False
     ret.cruiseState.nonAdaptive = False
