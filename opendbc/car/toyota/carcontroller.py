@@ -188,7 +188,14 @@ class CarController(CarControllerBase):
       extra_stock = stock_mag - acc if acc > 0 else stock_mag
       raw_apply_brake = max(extra_stock, raw_apply_brake * 0.85)
 
-    self.filtered_apply_brake = 0.7 * self.filtered_apply_brake + 0.3 * raw_apply_brake
+    # soften aggressive brake jumps at higher speeds before filtering
+    prev_filtered_brake = self.filtered_apply_brake
+    if CS.out.vEgo > 19.5:
+      raw_apply_brake = prev_filtered_brake + clip(raw_apply_brake - prev_filtered_brake, -0.12, 0.12)
+
+    # speed-aware filtering to reduce high-speed pump oscillation
+    brake_alpha = 0.7 if CS.out.vEgo < 16.7 else 0.85
+    self.filtered_apply_brake = brake_alpha * prev_filtered_brake + (1.0 - brake_alpha) * raw_apply_brake
     apply_brake = clip(self.filtered_apply_brake, 0., 1.25)
     if apply_brake < 1e-3:
       apply_brake = 0.
@@ -197,7 +204,10 @@ class CarController(CarControllerBase):
     # rate-limit target speed changes to reduce jerk in both directions
     prev_des_speed = self.last_des_speed
     if CS.out.vEgo > 3.0:
-      des_speed = rate_limit_speed(des_speed, prev_des_speed)
+      dec_limit = 0.008
+      if CS.out.vEgo > 19.5:
+        dec_limit = 0.004
+      des_speed = rate_limit_speed(des_speed, prev_des_speed, dec_limit=dec_limit)
 
     if apply_brake > 0:
       self.last_des_speed = CS.out.vEgo
