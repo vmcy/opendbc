@@ -145,6 +145,8 @@ class CarController(CarControllerBase):
 
     self.last_des_speed = 0
     self.filtered_apply_brake = 0.
+    self.filtered_neg_accel = 0.
+    self.filtered_stock_brake = 0.
 
   #def update(self, enabled, CS, frame, actuators, lead_visible, rlane_visible, llane_visible, pcm_cancel, ldw):
   def update(self, CC, CS, now_nanos):
@@ -174,24 +176,32 @@ class CarController(CarControllerBase):
 
     # Original KA2
     acc = actuators.accel
+    if acc < 0:
+      self.filtered_neg_accel = 0.7 * self.filtered_neg_accel + 0.3 * acc
+    else:
+      self.filtered_neg_accel *= 0.5
+    neg_acc = self.filtered_neg_accel if acc < 0 else acc
     k = 0.3 + 0.06 * CS.out.vEgo
     des_speed = CS.out.vEgo + acc * k
 
     # brake
-    raw_apply_brake = 0 if (CS.out.gasPressed or actuators.accel >= 0) else clip(abs(actuators.accel / BRAKE_M), 0., 1.25)
+    raw_apply_brake = 0 if (CS.out.gasPressed or neg_acc >= 0) else clip(abs(neg_acc / BRAKE_M), 0., 1.25)
     if CS.out.vEgo < 1.5:
       raw_apply_brake *= 0.85
       if raw_apply_brake > 0.0:
         des_speed = CS.out.vEgo
     else:
-      stock_mag = CS.stock_brake_mag * 0.5
+      self.filtered_stock_brake = 0.8 * self.filtered_stock_brake + 0.2 * (CS.stock_brake_mag * 0.5)
+      stock_mag = self.filtered_stock_brake
+      stock_mag = clip(stock_mag, 0., 1.0)
       extra_stock = stock_mag - acc if acc > 0 else stock_mag
-      raw_apply_brake = max(extra_stock, raw_apply_brake * 0.85)
+      target_brake = max(extra_stock, raw_apply_brake * 0.85)
+      raw_apply_brake = target_brake
 
-    # soften aggressive brake jumps at higher speeds before filtering
+    # soften aggressive brake jumps before filtering
     prev_filtered_brake = self.filtered_apply_brake
-    if CS.out.vEgo > 19.5:
-      raw_apply_brake = prev_filtered_brake + clip(raw_apply_brake - prev_filtered_brake, -0.12, 0.12)
+    delta_limit = 0.08 if CS.out.vEgo > 19.5 else 0.12
+    raw_apply_brake = prev_filtered_brake + clip(raw_apply_brake - prev_filtered_brake, -delta_limit, delta_limit)
 
     # speed-aware filtering to reduce high-speed pump oscillation
     brake_alpha = 0.7 if CS.out.vEgo < 16.7 else 0.85
